@@ -1,0 +1,194 @@
+name: reddit-collect
+
+# DORMANT since 2026-10-17. Runnable by hand, never on a schedule.
+#
+# Why: collecting from here needs authenticated Reddit reads, and the Reddit
+# script app that would authorise them is not going to exist. Without it every
+# run stops in about 11 seconds with "STOPPING: no Reddit app credentials", and
+# on a 3-hourly cron that is a failure mail every 3 hours forever.
+#
+# The code is NOT the problem, which is why none of it has been deleted. The
+# problem is the address it runs from. Measured from a runner on 2026-10-17:
+# logged-out `old.reddit.com` and `www.reddit.com` listings both answer 403
+# Blocked while the same request from a home connection answers 200, the .json
+# endpoints are 403, and the Atom feeds answer once and then 429 because that
+# budget is per IP. Authenticated API reads are the only route from a datacenter
+# and they need the credentials. If that ever changes, or credentials appear,
+# add the `schedule:` block back and this works as built. Nobody should wait for
+# that: the credentials are not obtainable, so the only thing that reopens it is
+# Reddit allowing unauthenticated reads again. Details and the full measurement
+# table are in reddit/collector/README.md.
+#
+# Collection currently runs on the always-on MacBook Air, which is where a
+# residential IP is. The thing that actually cost 45 days was not collection
+# breaking, it was nobody being told, and that is now watched from here by
+# .github/workflows/reddit-watchdog.yml, which needs no Reddit access at all.
+#
+# What it does when run by hand: collects Reddit posts where people describe the
+# problem Clarence solves, judges the most promising slice with Claude, and
+# pushes the queue to the cloud board the founder reads on his phone.
+#
+# READ THIS BEFORE CHANGING THE SOURCE. Measured 2026-10-17 from a runner:
+#   old.reddit / www HTML listings  403 Blocked   (200 from a home connection)
+#   the .json endpoints             403 Blocked
+#   the Atom feeds                  200 once, then 429 on 22 of the next 23
+# There is no logged-out path to Reddit from a datacenter address, so this job
+# authenticates. Without credentials it FAILS rather than collecting nothing,
+# because a dead collector looks exactly like a quiet queue from the board.
+#
+# Secrets it would need, two of which do not exist and will not. Registering a
+# Reddit app is not available to the founder, which is a rule in CLAUDE.md and
+# not a task: do not add it to a plan, a doc or a PR.
+#   REDDIT_CLIENT_ID      NOT AVAILABLE, so this workflow cannot collect, ever
+#   REDDIT_CLIENT_SECRET  NOT AVAILABLE
+#   COCKPIT_KEY           the key the phone board already uses
+#   ANTHROPIC_API_KEY     already set, shared with the content and AEO jobs
+#
+# Cost, against the measured $0.00192 per post judged (303 posts, $0.58 to date):
+#   a real day of hourly collection judged 121 posts, about $0.23. At the
+#   3-hourly cadence below that is roughly $7 a month, and the per-run caps put
+#   the worst case near $25, which the rolling 30-day ceiling in run.py stops
+#   before it gets there. Actions minutes: this repo is PRIVATE, so minutes are
+#   metered against the 2,000/month free allowance. Eight runs a day at about
+#   3 billed minutes is roughly 720 minutes a month, leaving room for the
+#   content pipeline and the AEO sweep. Hourly would need about 2,160 and does
+#   not fit, which is the other reason for 3-hourly.
+
+on:
+  # No `schedule:` on purpose. See the note at the top of this file: with no
+  # Reddit credentials a scheduled run can only fail, and a cron that can only
+  # fail is a mail every 3 hours that teaches you to ignore your own alerts.
+  # The 3-hourly slot this used to hold was '0 */3 * * *'.
+  workflow_dispatch:
+    inputs:
+      preflight:
+        description: 'Only check access, spend nothing'
+        type: boolean
+        default: false
+      no_judge:
+        description: 'Collect but do not spend on the model'
+        type: boolean
+        default: false
+
+concurrency:
+  # Two runs would collect the same posts into two different stores and both try
+  # to push the branch. Never cancel one in flight: it may be mid-judge, and the
+  # verdicts it has paid for are only saved when it writes the store back out.
+  group: reddit-collect
+  cancel-in-progress: false
+
+permissions:
+  contents: write         # to push the store branch
+
+env:
+  STORE_BRANCH: reddit-store
+  # How many commits of store history to keep before re-rooting the branch. The
+  # store is 1.3MB of text that git deltas well, but eight commits a day add up,
+  # so the branch drops its history periodically. Safe to do: this file is
+  # DERIVED. The records are the Mac's reddit.db and the cloud's append-only
+  # actions table, and about two months of revertible history is far more than
+  # needed to catch a bad run.
+  KEEP_HISTORY: '500'
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Bring in the store from its branch
+        run: |
+          set -euo pipefail
+          git fetch --depth 1 origin \
+            "+refs/heads/$STORE_BRANCH:refs/remotes/origin/$STORE_BRANCH" \
+            2>/dev/null || echo "no $STORE_BRANCH branch yet, this is the first run"
+          if git rev-parse -q --verify "refs/remotes/origin/$STORE_BRANCH" >/dev/null; then
+            git show "refs/remotes/origin/$STORE_BRANCH:store.sql" > "$RUNNER_TEMP/store.sql"
+            echo "carried in $(wc -c < "$RUNNER_TEMP/store.sql") bytes of store"
+            # The run counter travels in the tree, not in the history. A shallow
+            # fetch cannot count commits (rev-list stops at the shallow
+            # boundary and always answers 1), so basing the re-root below on
+            # history depth would silently never fire.
+            git show "refs/remotes/origin/$STORE_BRANCH:runs.txt" \
+              > "$RUNNER_TEMP/runs.txt" 2>/dev/null || echo 0 > "$RUNNER_TEMP/runs.txt"
+          else
+            echo "starting with an empty store"
+            echo 0 > "$RUNNER_TEMP/runs.txt"
+          fi
+
+      - name: Collect, judge, and push the queue
+        env:
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          COCKPIT_KEY: ${{ secrets.COCKPIT_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: claude-sonnet-5
+          # The data directory. Code is version controlled and data is not, so
+          # store.py works this out rather than defaulting next to the code,
+          # where an empty database would look like a quiet day.
+          CLARENCE_REDDIT_DATA: ${{ runner.temp }}/data
+          CLARENCE_STORE_SQL: ${{ runner.temp }}/store.sql
+          CLARENCE_ORIGIN: github-actions
+        run: |
+          mkdir -p "$RUNNER_TEMP/data"
+          ARGS=""
+          if [ "${{ inputs.preflight }}" = "true" ]; then ARGS="--preflight"; fi
+          if [ "${{ inputs.no_judge }}" = "true" ]; then ARGS="$ARGS --no-judge"; fi
+          python3 reddit/collector/run.py $ARGS
+
+      - name: Write the store back to its branch
+        # Runs even if the step above failed. If a run dies after judging, the
+        # verdicts it paid for are in the dump, and throwing them away would mean
+        # paying to judge the same posts again next time. A run that failed
+        # earlier leaves the dump exactly as it arrived, and the tree comparison
+        # below then makes this a no-op.
+        if: always() && inputs.preflight != true
+        run: |
+          set -euo pipefail
+          SQL="$RUNNER_TEMP/store.sql"
+          if [ ! -s "$SQL" ]; then
+            echo "no store to write, skipping"; exit 0
+          fi
+          git config user.name "clarence-reddit-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Built with plumbing on purpose: no checkout, no branch switch, no
+          # working tree touched. main cannot be affected by this even in
+          # principle, and the store branch never needs to exist locally.
+          RUNS=$(( $(tr -dc '0-9' < "$RUNNER_TEMP/runs.txt" 2>/dev/null || echo 0) + 1 ))
+          PARENT=$(git rev-parse -q --verify "refs/remotes/origin/$STORE_BRANCH" || true)
+
+          # Compare the STORE blob, not the tree: the counter changes every run,
+          # so a tree comparison would never find anything unchanged.
+          if [ -n "$PARENT" ]; then
+            OLD=$(git rev-parse -q --verify "$PARENT:store.sql" || true)
+            NEW=$(git hash-object "$SQL")
+            if [ "$OLD" = "$NEW" ]; then
+              echo "store unchanged, nothing to push"; exit 0
+            fi
+          fi
+
+          echo "$RUNS" > "$RUNNER_TEMP/runs.txt"
+          BLOB=$(git hash-object -w "$SQL")
+          RBLOB=$(git hash-object -w "$RUNNER_TEMP/runs.txt")
+          TREE=$(printf '100644 blob %s\truns.txt\n100644 blob %s\tstore.sql\n' \
+            "$RBLOB" "$BLOB" | git mktree)
+
+          MSG="reddit: store after $(date -u +%Y-%m-%dT%H:%MZ) (run $RUNS)"
+          if [ -z "$PARENT" ]; then
+            COMMIT=$(git commit-tree "$TREE" -m "$MSG")
+          elif [ "$(( RUNS % KEEP_HISTORY ))" -eq 0 ]; then
+            echo "re-rooting the store branch at run $RUNS"
+            COMMIT=$(git commit-tree "$TREE" -m "$MSG, history re-rooted")
+          else
+            COMMIT=$(git commit-tree "$TREE" -p "$PARENT" -m "$MSG")
+          fi
+          # Force, because a re-root is deliberately not a fast-forward. Only
+          # ever this one branch, which nothing merges from.
+          git push --force origin "$COMMIT:refs/heads/$STORE_BRANCH"
+          echo "store branch now at $COMMIT"

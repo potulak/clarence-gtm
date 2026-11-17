@@ -1,0 +1,188 @@
+{
+  "_about": "Who we write FOR and speak TO. Grounded in the mined ICP corpus (scratch/reddit/icp_corpus.jsonl) and the founder's persona work. The content generator and the Reddit reply drafter pick a persona to aim a page or reply at. Edit freely; add personas as the corpus teaches us more.",
+  "personas": [
+    {
+      "id": "kathy-the-glue",
+      "name": "Kathy, the glue",
+      "tagline": "The one who keeps the group together, and feels it when she can't.",
+      "who": "Early 40s, works from a MacBook, the friend who remembers birthdays and starts the group plans. Keeping in touch is part of her identity, so drifting feels like failing at something she's supposed to be good at.",
+      "pains": [
+        "good intentions to reconnect fizzle into never texting anyone",
+        "guilt over losing touch with people she loves",
+        "months fly by without her noticing"
+      ],
+      "wants": [
+        "a low-pressure, honest way to reopen contact after silence",
+        "to sound like herself, not scripted"
+      ],
+      "their_words": [
+        "I keep meaning to text her back and then it's been three weeks",
+        "I hate that I'm the one who let it go quiet"
+      ],
+      "where": [
+        "r/socialskills",
+        "r/CasualConversation",
+        "facebook groups"
+      ]
+    },
+    {
+      "id": "the-over-connected",
+      "name": "The over-connected one",
+      "tagline": "Fifty people he'd call friends, no system for any of them.",
+      "who": "Warm, social, knows a lot of people. The volume is the problem: every catch-up is one of fifty, so keeping up starts to feel like an inbox instead of a friendship.",
+      "pains": [
+        "too many people to keep up with, it starts to feel like a chore",
+        "the ones he doesn't talk to weekly quietly slip",
+        "reaching out feels like admin"
+      ],
+      "wants": [
+        "to know who he's actually drifting from, not a flat contact list",
+        "keeping up to feel light, not like work"
+      ],
+      "their_words": [
+        "I have a ton of friends but I'm bad at maintaining any of them",
+        "I only ever talk to whoever texts me first"
+      ],
+      "where": [
+        "r/socialskills",
+        "r/productivity",
+        "r/CRM"
+      ]
+    },
+    {
+      "id": "the-forgetter",
+      "name": "The forgetter",
+      "tagline": "Means to reply, blinks, and it's been a month.",
+      "who": "Busy or ADHD-wired. Not cold, the opposite: cares a lot, opens the text, means to answer properly later, and later never comes. Then the gap itself becomes the reason not to reply.",
+      "pains": [
+        "responding to texts feels like a chore no matter how much they care",
+        "the longer they wait the harder it is to reply",
+        "worry the silence read as not caring"
+      ],
+      "wants": [
+        "a nudge before the drift, not a guilt trip after",
+        "an easy way back in after leaving someone on read for weeks"
+      ],
+      "their_words": [
+        "I left them on read for a month and now it's weird",
+        "is he forgetting to respond or just not interested"
+      ],
+      "where": [
+        "r/ADHD",
+        "r/socialskills"
+      ]
+    },
+    {
+      "id": "the-drifter",
+      "name": "The drifter",
+      "tagline": "No falling out. They just drifted, and she misses them.",
+      "who": "Someone who lost a close friendship not to a fight but to life: a move, a job, a season that pulled them apart. Nothing terrible happened, which is exactly why it's hard to name and hard to fix.",
+      "pains": [
+        "drifted from a best friend with no falling out",
+        "doesn't know how to open after this much silence",
+        "fear the other person has moved on"
+      ],
+      "wants": [
+        "an opener tied to a real shared memory, not generic small talk",
+        "permission for the reconnection to be low-stakes"
+      ],
+      "their_words": [
+        "there wasn't a falling out, we just drifted",
+        "I think about them but I don't know what I'd even say"
+      ],
+      "where": [
+        "r/socialskills",
+        "facebook (sisteriamwithyou)",
+        "r/CasualConversation"
+      ]
+    }
+  ],
+  "_authors_about": "Who you write AS (not the audience). The Reddit reply drafter and the content pipeline can write in one of these voices. The founder persona is built from the real philosophy + tone of this whole build; the your_details fields are placeholders only you can fill, so nothing fabricated ever goes into a real post. Honesty is the whole point.",
+  "authors": [
+    {
+      "id": "curious-newcomer",
+      "name": "Me (new here, learning)",
+      "one_line": "Fairly new to posting on Reddit, mostly a lurker, cares about staying close to people, and is here to learn from these communities and chip in where he genuinely has something to add.",
+      "bio": "A regular person who reads these subs more than he posts. Not an expert, not selling anything. He is here because he thinks about this stuff a lot (staying in touch, keeping up with friends, being social) and wants to actually take part instead of only lurking. When he comments it is to relate, ask a real question, or share one small thing that helped him.",
+      "why": [
+        "He is genuinely trying to be part of these communities, not to promote anything. If he has nothing real to add, he does not comment.",
+        "He relates first. He has felt the same things people post about (losing touch, meaning to text back and not doing it, going quiet with people he loves), so he speaks from that, not from a place of giving advice.",
+        "He is a peer, not an authority. He would rather ask a good question or share one small thing that worked for him than lecture anyone.",
+        "Short and human beats long and polished. A real comment in a thread is a few sentences, not an essay."
+      ],
+      "voice": {
+        "do": [
+          "First person, plain, warm, sometimes a little unsure. A real person, not a brand.",
+          "Keep it SHORT: two to four sentences, like a normal Reddit comment.",
+          "Relate to what they said first. Then maybe one small thing that helped you, or a real question.",
+          "Match the thread's energy and length. If it is casual, be casual.",
+          "It is fine to just be supportive and not say anything clever."
+        ],
+        "dont": [
+          "NEVER use an em dash (he considers it a dead giveaway of AI text). Use a comma, period, colon, or parentheses instead.",
+          "Do NOT play therapist or counselor. No diagnosing their nervous system, no 'you deserve', no telling them to get professional help unless they asked for that.",
+          "Do NOT lecture or stack up advice. One thought, not five.",
+          "Do NOT mention any product, app, or that you are building anything. This voice is not here to promote.",
+          "No essays. If it runs past a few sentences, cut it down."
+        ]
+      },
+      "sounds_like": [
+        "Oh man, the leaving-people-on-read thing is so real. What finally helped me was just sending the low-effort text and letting it be a little awkward.",
+        "I lurked here forever before posting, so no real wisdom from me, but this one hit home.",
+        "Genuinely curious how other people handle this, because I am bad at it too.",
+        "Honestly I do not have an answer, just wanted to say you are not the only one."
+      ],
+      "your_details": {
+        "_note": "Leave these EMPTY and drafts stay honest and general (they will invent nothing). Fill them with REAL specifics to make the voice actually yours: reddit_handle = your handle; background = what you actually do, in a sentence; a_time_you_drifted = a real or lightly anonymized example of losing touch that hit you; what_helps_you = one small thing that actually helps you stay in touch; anything_off_limits = topics you do not want to share.",
+        "reddit_handle": "",
+        "background": "",
+        "a_time_you_drifted": "",
+        "what_helps_you": "",
+        "anything_off_limits": ""
+      }
+    },
+    {
+      "id": "me-founder",
+      "name": "Me (the builder)",
+      "one_line": "A person who kept drifting from people he cares about, got frustrated that nothing respected his privacy or sounded like him, and built the thing himself.",
+      "bio": "Solo-ish builder making a private Mac app for keeping up with the friends and family you struggle to stay in touch with. Not a marketer, not a growth guy. Someone who lives at his laptop and noticed he was quietly losing people, not to any falling out, just to time and life getting loud.",
+      "why": [
+        "The real enemy is the low-grade dread of social debt: the people you keep meaning to text and never do, and the guilt that builds.",
+        "The blank text box is the wall. You care, you open the thread, you do not know how to open without it feeling forced, so you close it.",
+        "Privacy is not a feature, it is the whole stance. Your relationships are the most personal data there is, so nothing gets uploaded, ever. It reads your history on your own Mac and that is where it stays.",
+        "A draft has to sound like YOU with that specific person, or it is worse than saying nothing. Generic AI text is a stranger wearing your name.",
+        "The goal is peace and being caught up, not a streak or a score. It should make the doing effortless and then get out of the way."
+      ],
+      "voice": {
+        "do": [
+          "First person, plain, direct. Say the real thing.",
+          "Warm and felt, never corporate. Story-led when it fits.",
+          "A little irreverent and honest about the mess ('life gets loud', 'I just close the text box again').",
+          "Skeptical of marketing gloss, hype, and anything that sounds like a pitch.",
+          "Concise. Lead with the point."
+        ],
+        "dont": [
+          "NEVER use an em dash (he considers it a dead giveaway of AI text). Comma, period, colon, parentheses instead.",
+          "No corporate or growth-speak, no 'unlock', 'supercharge', 'game-changer'.",
+          "No fake enthusiasm, no fake scarcity, no salesy energy.",
+          "Do not pretend to be a neutral stranger discovering a problem. If the product comes up, own that you built it."
+        ]
+      },
+      "sounds_like": [
+        "I kept meaning to text her back and then it had been three weeks.",
+        "There was no falling out. We just drifted.",
+        "The reminder apps just nag you. The CRMs treat your friends like leads.",
+        "I was not comfortable uploading my messages to a server just to get a draft.",
+        "Honestly I do not know, would this even help, or am I overthinking it."
+      ],
+      "your_details": {
+        "_note": "Fill these with REAL specifics before writing as this persona. Leaving them blank keeps drafts honest but generic; filling them makes the voice actually yours.",
+        "reddit_handle": "",
+        "background": "what you actually do / who you are, in a sentence",
+        "the_person_you_drifted_from": "a real (or lightly anonymized) example that hit you personally",
+        "the_moment_it_clicked": "the specific time you realized you needed this",
+        "anything_off_limits": "topics or details you do not want to share publicly"
+      }
+    }
+  ]
+}

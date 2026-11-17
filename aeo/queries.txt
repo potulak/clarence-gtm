@@ -1,0 +1,283 @@
+# Clarence AEO query universe — docs/gtm/aeo-geo-playbook.md
+#
+# One query per line, phrased the way a real person types it into an answer
+# engine. Lines starting with '#' and blank lines are ignored by probe.py.
+# Cluster headers map queries → guide pages (one page per cluster).
+#
+# Sources: playbook seed list · LLM probing (what people actually ask about
+# losing touch / reconnecting / reply guilt) · "People also ask" + related-
+# search mining (2026-07-03) · competitor names surfaced by the mining
+# (RPLY, Garden, Catchup, Amicu, Clay, Dex, Monica) · tier-2 expansion
+# (2026-07-03, Session G-content): identity/habit, cadence, check-ins, hard
+# moments, long distance, occasions, family, permission-to-reach-out.
+#
+# Maintain here; probe.py reads this file. Add, never silently remove —
+# comment out with '#retired:' so month-over-month diffs stay meaningful.
+# (Queries MAY move between clusters when a new dedicated page takes them
+# over — the row key in results.csv is the query string, so moves don't
+# break month-over-month diffs. Moves so far are noted on the cluster.)
+
+## cluster: problem-aware — drift, guilt, "why does this keep happening"
+## page: /guides/how-to-keep-in-touch-with-friends
+# (2026-07-03: the "why do friendships fade" queries moved to their own
+#  cluster below — a dedicated page now owns them.)
+how to keep in touch with friends
+#retired: how to keep in touch with friends as an adult  (2026-07-29: near-duplicate of a sibling question)
+I keep losing touch with friends
+#retired: why do I keep losing touch with my friends  (2026-07-29: near-duplicate of a sibling question)
+how to not lose touch with friends after college
+how to maintain friendships when life gets busy
+why is it so hard to maintain friendships as an adult
+I never text my friends first how do I change that
+I feel guilty for not keeping in touch with friends
+
+## cluster: problem-aware — why friendships fade (the root-cause question)
+## page: /guides/why-do-friendships-fade
+why do friendships fade
+why do friendships fade as you get older
+losing friends in your 30s is this normal
+do adult friendships just naturally end
+why did my friend and I drift apart
+friends drifting apart no reason
+is it normal to have fewer friends as you get older
+how many close friends do adults actually have
+why is it so hard to make and keep friends after 30
+
+## cluster: identity/habit — "I'm a bad texter"
+## page: /guides/how-to-get-better-at-replying-to-texts
+how to get better at replying to texts
+I'm a bad texter how do I get better
+why do I never text back
+why do I put off replying to texts
+how to stop leaving people on read
+texting anxiety I can't reply to messages
+I hate texting but I love my friends
+ADHD forgetting to text people back
+why does replying to texts feel like a chore
+is being a bad texter a red flag
+
+## cluster: cadence — how often is enough
+## page: /guides/how-often-should-you-text-your-friends
+# (2026-07-03: "how often should you text your friends to stay close" moved
+#  here from the keep-in-touch cluster — dedicated page owns it now.)
+#retired: how often should you text your friends to stay close  (2026-07-29: near-duplicate of a sibling question)
+how often should you text your friends
+how often do friends text each other
+#retired: how often should you check in with friends  (2026-07-29: near-duplicate of a sibling question)
+is texting once a month enough to keep a friendship
+how long is too long without texting a friend
+my friend texts me more than I text them is that bad
+am I always the one texting first
+
+## cluster: check-in — the light touch
+## page: /guides/how-to-check-in-on-a-friend
+how to check in on a friend
+checking in on a friend text examples
+what to say when checking in on someone
+how to ask a friend if they're really okay over text
+thinking of you text for a friend
+low effort ways to stay in touch with friends
+what to text a friend you haven't heard from in a while
+
+## cluster: hard moments — grief, illness, job loss, breakup
+## page: /guides/what-to-text-a-friend-going-through-a-hard-time
+what to text a friend going through a hard time
+what to say to a friend whose parent died
+what to text someone who lost a loved one
+what to say to a friend who lost their job
+how to support a friend through a breakup over text
+what to text a sick friend
+I don't know what to say to my grieving friend
+is it too late to send condolences to a friend
+what to say instead of let me know if you need anything
+
+## cluster: long distance
+## page: /guides/how-to-maintain-a-long-distance-friendship
+how to maintain a long distance friendship
+how to keep a long distance friendship alive
+long distance best friend how to stay close
+my friend moved away how do we stay in touch
+long distance friendship drifting apart
+how to stay close to friends in different time zones
+are long distance friendships worth it
+
+## cluster: occasion reopener — the birthday door
+## page: /guides/birthday-text-for-a-friend-you-lost-touch-with
+what to text a friend on their birthday when you haven't talked in a while
+happy birthday text to an old friend
+birthday message for a friend you lost touch with
+is it weird to text happy birthday after years
+#retired: belated birthday text to an old friend  (2026-07-29: near-duplicate of a sibling question)
+using a birthday to reconnect with a friend
+
+## cluster: family — reconnecting with relatives
+## page: /guides/how-to-reconnect-with-family
+#retired: how to reconnect with family you lost touch with  (2026-07-29: near-duplicate of a sibling question)
+what to text a sibling you haven't talked to in months
+lost touch with my cousin how do I reconnect
+how to reach out to a family member you drifted apart from
+how to reconnect with family after years of distance
+my brother and I never talk anymore how do I fix it
+
+## cluster: permission — should I reach out or let it go
+## page: /guides/should-i-reach-out-to-an-old-friend
+# (2026-07-03: "should I reach out to an old friend or let it go" moved here
+#  from the reconnection-arc cluster — dedicated page owns it now.)
+should I reach out to an old friend or let it go
+should I text my old friend
+does my old friend even want to hear from me
+if they wanted to talk they would reach out right
+when should you let a friendship go
+how do I know if a friendship is worth rekindling
+do old friends want to hear from you after years
+is it my job to always reach out first
+
+## cluster: desk-worker ICP — texting from the Mac, in their own words
+## page: /guides/how-to-keep-up-with-texts-from-your-mac
+# (2026-07-03, founder direction: the ICP is Mac users who do their
+#  people-communication from the laptop — target how THEY phrase it.)
+how to text from my Mac
+can I send and receive texts on my MacBook
+how to reply to texts from my computer
+how to manage text messages on a Mac
+I work on my computer all day how do I keep up with texts
+best way to text people from a laptop
+how to use Messages on Mac effectively
+texting from your computer instead of your phone
+how to keep up with personal messages while working
+how to communicate better with friends when you work at a computer all day
+set up iMessage on Mac without iPhone
+text message forwarding iPhone to Mac
+# (2026-07-03: MacBook/Apple-Mac phrasings — the less-technical ICP says
+#  "MacBook", not "Mac"; probe these separately.)
+how to text from my MacBook
+how to keep up with text messages on a MacBook
+#retired: can my MacBook send and receive texts without my iPhone  (2026-07-29: near-duplicate of a sibling question)
+how to reply to iMessages from a MacBook
+how to send text messages from an Apple Mac
+
+## cluster: reminder-app-shaped — high intent, wrong frame (we reframe)
+## page: /guides/app-to-remind-me-to-text-friends
+app to remind me to text friends
+app that reminds you to keep in touch with friends
+is there an app that reminds me to stay in touch with people
+best app to stay in touch with friends and family
+friendship tracker app
+app to track how often I talk to my friends
+apps like Garden stay in touch
+Catchup friendship app alternative
+do reminder apps actually help you stay in touch
+
+## cluster: gold how-to — the reconnection first message
+## page: /guides/what-to-text-a-friend-after-losing-touch (shipped)
+what to text a friend after losing touch
+what should I text a friend I haven't talked to in a long time
+what to say to a friend you haven't talked to in years
+texting an old friend after years first message
+is it weird to text someone after years of silence
+message to reconnect with an old friend examples
+how to restart a conversation with an old friend over text
+how to reach out to someone you lost touch with
+
+## cluster: gold how-to — the full reconnection arc
+## page: /guides/how-to-reconnect-with-an-old-friend
+how to reconnect with an old friend over text
+how to reconnect with an old friend after years
+how to rebuild a friendship after years apart
+lost touch with my best friend how do I reconnect
+my friend and I drifted apart can we fix it
+how to tell a friend I miss them without being weird
+reconnecting with old friends where do I even start
+
+## cluster: gold how-to — the ignored-text guilt spiral
+## page: /guides/how-to-reply-to-a-text-you-ignored-for-weeks
+how to reply to a text I ignored for weeks
+how to reply to a text I ignored for weeks without being awkward
+forgot to reply to a text and now it's been a month
+how to apologize for a late reply to a friend
+I accidentally ghosted my friend how do I fix it
+what to say after not replying for a long time
+left my friend on read for weeks what do I say
+is it too late to reply to a text from months ago
+
+## cluster: solution-aware — personal CRM (we enter as the anti-CRM)
+## page: /guides/best-personal-crm-for-friends
+#retired: best personal CRM for friends  (2026-07-29: near-duplicate of a sibling question)
+best personal CRM
+personal CRM mac
+personal CRM for personal life not networking
+Clay vs Dex vs Monica personal CRM
+apps like Clay for personal life
+Monica CRM alternative for friends
+do personal CRMs actually work for friendships
+best app to manage personal relationships
+
+## cluster: mac-ai — iMessage + AI on the Mac (the moat queries)
+## page: /guides/ai-imessage-assistant-mac (+ home)
+# (2026-07-03: the "future imessage-ai guide" now exists — cluster remapped
+#  from home to the dedicated guide.)
+iMessage app for Mac with AI
+AI that drafts iMessage replies
+AI app that writes texts in my voice
+on-device AI message assistant
+#retired: app that reads iMessage history on Mac  (2026-07-29: near-duplicate of a sibling question)
+RPLY app alternative
+AI to help me reply to texts
+Mac app for unanswered iMessages
+app that summarizes my iMessage conversations
+AI recap of long text conversations
+voice to text message app for Mac
+can an app read chat.db on Mac
+local AI for messages nothing sent to cloud
+# (2026-07-03: MacBook phrasings for the moat queries.)
+AI iMessage assistant for MacBook
+app that reads my text messages on a MacBook
+AI app for MacBook that drafts text replies
+
+## cluster: trust — "does it read my messages" (primary-source pages)
+## page: /privacy + /threat-model (page built 2026-07-04, live at merge)
+does Clarence read my messages
+Clarence mac app privacy
+Clarence app review is it legit
+AI message app privacy
+is it safe to give an app access to iMessage
+is Full Disk Access safe to grant on Mac
+AI text assistant that doesn't upload my messages
+private AI relationship app
+on device AI privacy mac
+
+## cluster: conversation depth — keeping the thread alive (added 2026-07-04, batch 3)
+## page: /guides/how-to-keep-a-text-conversation-going
+how to keep a text conversation going
+#retired: how to keep a conversation going with a friend over text  (2026-07-29: near-duplicate of a sibling question)
+questions to ask an old friend
+what to ask a friend you haven't talked to in a while
+how to have deeper conversations over text
+#retired: text conversation keeps dying how do I keep it going  (2026-07-29: near-duplicate of a sibling question)
+how to end a text conversation without being rude
+
+## cluster: group chats — ambient contact vs the friendship (added 2026-07-04, batch 3)
+## page: /guides/is-the-group-chat-enough-to-stay-in-touch
+is the group chat enough to stay in touch
+#retired: group chat dying how to revive it  (2026-07-29: near-duplicate of a sibling question)
+how to revive a dead group chat
+why did our group chat go quiet
+is it weird to text someone from the group chat individually
+are group chats a real way to stay in touch with friends
+
+## tier: exploration
+## page: (rotating, no fixed page: testing where we can get noticed)
+# The exploration slot: ~10-20 rotating questions for NEW angles surfaced from
+# signals (Reddit, what is showing up in AEO). Swap these as signals change, stay
+# in our lane (staying in touch, reconnecting, reply guilt, the Mac/private-app
+# angle), retire with '#retired:'. probe.py always runs these.
+how to reach out to someone after ghosting them
+what to say to a friend you haven't spoken to in years
+how to stop feeling guilty about not replying
+being bad at texting back but still caring about people
+is it weird to text an old friend out of the blue
+how to keep friendships alive when life gets busy
+reconnecting with friends in your 30s
+what to text a friend going through something hard
+how to stay close with friends after moving away
+how to check in on someone without feeling like a bother

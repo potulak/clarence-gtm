@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Clarence GTM">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f4f2ec">
+<title>Clarence · Reddit</title>
+<style>
+  :root{
+    --paper:#f4f2ec; --surface:#fffefb; --surface2:#faf8f2; --ink:#1c1b18;
+    --soft:#57534b; --faint:#8a857b; --line:#e5e0d6;
+    --accent:#0e7b6b; --good:#1f8a5b; --warn:#bd7710; --err:#c0392b;
+    color-scheme: light;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; background:var(--paper); color:var(--ink);
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    padding:0}
+  /* Header carries one thing: where you are in the stack. */
+  header{position:sticky; top:0; z-index:20; background:var(--paper);
+    border-bottom:1px solid var(--line);
+    padding:calc(8px + env(safe-area-inset-top)) 14px 8px}
+  .hrow{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+  h1{margin:0; font:600 16px/1.2 Georgia,serif}
+  .sub{color:var(--faint); font-size:13px}
+  .prog{height:3px; background:var(--line); border-radius:2px; margin-top:8px; overflow:hidden}
+  .prog i{display:block; height:100%; background:var(--accent); transition:width .25s}
+  main{padding:12px 12px 112px}
+
+  /* A step is a labelled block. The number is the point: this is a sequence,
+     not a form you scan. Later steps do not exist until they are earned. */
+  .step{margin:0 0 14px}
+  .slabel{display:flex; align-items:center; gap:8px; margin:0 0 7px}
+  .snum{flex:0 0 auto; width:21px; height:21px; border-radius:50%;
+    background:var(--ink); color:var(--paper); font:600 12px/21px inherit;
+    text-align:center}
+  .sname{font-weight:650; font-size:14px}
+  .shint{color:var(--faint); font-size:12.5px; margin:-3px 0 7px 29px}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px}
+  .t{font-weight:650; font-size:18px; line-height:1.3}
+  .meta{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 0}
+  .pill{font-size:12px; padding:2px 9px; border-radius:999px; border:1px solid var(--line); color:var(--soft)}
+  .pill.hot{border-color:var(--good); color:var(--good)}
+  .pill.old{border-color:var(--warn); color:var(--warn)}
+  .why{color:var(--soft); font-size:14px; margin:9px 0 0}
+  .body{font-size:15.5px; line-height:1.55; white-space:pre-wrap; margin:11px 0 0;
+    max-height:320px; overflow:hidden; position:relative}
+  .body:not(.all):after{content:""; position:absolute; left:0; right:0; bottom:0;
+    height:54px; background:linear-gradient(to bottom, rgba(255,254,251,0), var(--surface))}
+  .body.all{max-height:none; overflow:visible}
+  .body.all:after{display:none}
+  .more{color:var(--accent); font-weight:600; font-size:13.5px; background:none;
+    border:0; padding:6px 0 0}
+  .quote{color:var(--soft); font-size:15px; font-style:italic; margin:11px 0 0;
+    border-left:2px solid var(--line); padding-left:10px; white-space:pre-wrap}
+  .warnline{color:var(--warn); font-size:13.5px; margin:9px 0 0}
+
+  textarea{width:100%; padding:11px; font:inherit; font-size:16px; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    resize:vertical; display:block}
+  textarea.say{min-height:92px; background:var(--surface2)}
+  textarea.draft{min-height:150px; border-left:3px solid var(--accent); line-height:1.5}
+  textarea.fix{min-height:58px; background:var(--surface2)}
+
+  .btn{min-height:48px; width:100%; border-radius:12px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); font:600 15px/1 inherit;
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    text-decoration:none; padding:0 12px; margin-top:8px}
+  .btn.go{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .btn.done{background:var(--good); color:#fff; border-color:var(--good)}
+  .btn:disabled{opacity:.55}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .two .btn{margin-top:8px}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:9px}
+  .chip{padding:9px 13px; border-radius:999px; border:1px solid var(--line);
+    background:var(--surface2); color:var(--soft); font:600 13px/1 inherit; min-height:36px}
+  .chip.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .voice{display:flex; gap:6px; align-items:center; margin:0 0 8px}
+  .voice .lbl{color:var(--faint); font-size:12.5px}
+
+  /* The bottom bar is the only thing that moves you on. It is always reachable
+     with a thumb, and it never silently does two things at once. */
+  .bar{position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--paper);
+    border-top:1px solid var(--line);
+    padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
+  .bar .row{display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center}
+  .bar .btn{margin:0}
+  .mini{min-height:44px; width:auto; padding:0 14px; font-size:14px}
+  .nav{display:flex; gap:6px; justify-content:space-between; margin-top:8px}
+  .nav button{flex:1; min-height:40px; border-radius:10px; border:1px solid var(--line);
+    background:var(--surface); color:var(--soft); font:600 13px/1 inherit}
+  .nav button.on{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+
+  .banner{background:#fdf6e7; border:1px solid #efdfb8; color:#6b4f12;
+    border-radius:12px; padding:11px 12px; font-size:13.5px; margin-bottom:12px}
+  .banner b{color:#4a3607}
+  .rep{background:var(--surface); border:1px solid var(--line);
+    border-left:3px solid var(--good); border-radius:13px; padding:13px; margin-bottom:11px}
+  .rep .who{font-weight:650; font-size:15px}
+  .rep .on{color:var(--faint); font-size:12.5px; margin:3px 0 7px}
+  .rep .said{font-size:15px; line-height:1.45; white-space:pre-wrap}
+  .mine{color:var(--soft); font-size:13.5px; margin:9px 0 0; border-left:2px solid var(--line); padding-left:10px}
+  .sv{background:var(--surface); border:1px solid var(--line); border-radius:13px;
+    padding:13px; margin-bottom:10px}
+  .toast{position:fixed; left:12px; right:12px; bottom:calc(102px + env(safe-area-inset-bottom));
+    background:var(--ink); color:#fff; border-radius:12px; padding:12px 14px; font-size:14px;
+    display:none; z-index:50; box-shadow:0 6px 24px rgba(0,0,0,.25)}
+  .toast button{background:rgba(255,255,255,.16); color:#fff; border:0; border-radius:9px;
+    padding:8px 12px; font-size:13px; margin:6px 5px 0 0; min-height:38px}
+  /* Skip asks why. The answer is the label on a training example, so it is
+     worth a real screen rather than a toast you can miss. */
+  .sheet{position:fixed; inset:0; z-index:60; background:rgba(28,27,24,.45);
+    display:none; align-items:flex-end}
+  .sheet.open{display:flex}
+  .sheet .inner{background:var(--paper); width:100%; border-radius:18px 18px 0 0;
+    padding:18px 14px calc(18px + env(safe-area-inset-bottom)); max-height:88vh; overflow:auto}
+  .sheet h2{margin:0 0 3px; font:650 18px/1.25 Georgia,serif}
+  .sheet .q{color:var(--soft); font-size:14px; margin:0 0 13px}
+  .rgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .rgrid button{min-height:52px; border-radius:12px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); font:600 14px/1.25 inherit; padding:6px 8px}
+  .rgrid button.on{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+  /* Record button. Only shown where the browser will actually grant a mic. */
+  .microw{display:flex; gap:9px; align-items:center; margin-top:8px}
+  .mic{flex:0 0 auto; width:52px; height:52px; border-radius:50%; border:1px solid var(--line);
+    background:var(--surface); font-size:21px; display:flex; align-items:center; justify-content:center}
+  .mic.rec{background:var(--err); border-color:var(--err); color:#fff; animation:pulse 1.2s infinite}
+  .mic.busy{opacity:.6}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.62}}
+  .micnote{color:var(--faint); font-size:12.5px; line-height:1.35}
+  .empty{text-align:center; color:var(--faint); padding:46px 20px; font-size:15px}
+  .empty b{color:var(--soft)}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow"><h1 id="htitle">Reddit</h1><span class="sub" id="hcount"></span></div>
+  <div class="prog"><i id="pbar" style="width:0"></i></div>
+</header>
+<main id="view"><div class="empty">loading…</div></main>
+<div class="bar">
+  <div id="actions"></div>
+  <div class="nav">
+    <button id="nav-deck" class="on" onclick="go('deck')">Queue</button>
+    <button id="nav-reps" onclick="go('replies')">Replies</button>
+    <button id="nav-saved" onclick="go('saved')">Saved</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="sheet" id="sheet"><div class="inner" id="sheetin"></div></div>
+<script>
+const K = new URLSearchParams(location.search).get('k') || '';
+const q = p => p + (p.includes('?') ? '&' : '?') + 'k=' + encodeURIComponent(K);
+const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const REASONS = {
+  'deleted':'deleted','off-subject':'off subject','too-late':'too old',
+  'nothing-to-add':'nothing to add','wrong-crowd':'not my crowd','would-be-ad':'would read as an ad'
+};
+// One tap for the things usually wrong with a first draft. Each is an edit of
+// what is in the box, so the version you nearly liked survives.
+const FIXES = {
+  'shorter':'shorter','warmer':'warmer','less-advice':'less advice',
+  'more-me':'more like me','less-salesy':'less salesy','no-question':'drop the question'
+};
+const VOICES = [['curious-newcomer','new here'],['me-founder','the builder']];
+
+let VIEW = 'deck', DECK = [], ALL_PICKS = [], REPS = [], SAVED = [], I = 0, HEALTH = {},
+    VOICE_SET = {}, WIDENED = false, WINDOW_H = 0;
+// How far back the deck reaches right now. Five hours is the default because a
+// comment landing after that starts at zero votes under ones that have been
+// gathering them since the OP was still reading. The steps exist because
+// finishing the fresh ones and wanting more is a normal way for a session to
+// go, and widening should not mean waiting for the next push.
+const AGE_STEPS = [5, 12, 24, 48];
+let AGE_MAX = 5;
+let COUNTS = {}, NEWSUBS = [];
+// What this board can do depends on WHICH board is serving it, and the two
+// answers differ. This one file runs on the Mac at home and on the Worker at the
+// edge, so it asks rather than infers.
+//
+//   transcribe   the Mac has Whisper bundled and does it on the device. The
+//                Worker has no speech model behind it at all, so a record button
+//                there could only ever fail.
+//   fetchThread  reading a thread live needs Reddit to answer a logged-out
+//                request, which as of 2026-10-17 it does not, from anywhere.
+//                The Mac says yes only when API credentials exist.
+//
+// Both default to NO. A board that has not answered yet should not be offering
+// a control, and the fallbacks work everywhere.
+let CAN = {transcribe:false, fetchThread:false};
+let VOICE = localStorage.getItem('voice') || 'curious-newcomer';
+const prevDrafts = {};       // id -> earlier drafts, for "previous"
+
+async function api(path, body){
+  const o = body ? {method:'POST', headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify(body)} : {};
+  try{ return await (await fetch(q(path), o)).json(); }
+  catch(e){ return {ok:false, error:'no connection'}; }
+}
+const age = h => h < 48 ? Math.round(h)+'h old'
+  : h < 720 ? (h/24).toFixed(0)+' days old' : Math.round(h/720)+' months old';
+const cur = () => DECK[I] || null;
+
+async function load(){
+  // The DAY'S LIST, not the whole queue. The queue is three hundred judged
+  // posts and no human reads three hundred of anything; shortlist.py picks the
+  // ten to twenty worth a morning, caps how many come from any one subreddit,
+  // and spends a couple of slots somewhere you have never posted.
+  const d = await api('/api/reddit/shortlist?want=20');
+  CAN = {transcribe: !!d.can_transcribe, fetchThread: !!d.can_fetch_threads};
+  HEALTH = d.health || {};
+  // Counted on the Mac and carried up by the push: the table behind it never
+  // leaves that machine, so the phone is told rather than working it out.
+  VOICE_SET = d.voice || {};
+  WIDENED = !!d.widened;
+  WINDOW_H = d.window_hours || 0;
+  ALL_PICKS = d.picks || [];
+  DECK = withinAge(ALL_PICKS, AGE_MAX);
+  COUNTS = d.counts || {};
+  NEWSUBS = d.new_communities || [];
+  REPS = d.replies || [];
+  if(I >= DECK.length) I = Math.max(0, DECK.length - 1);
+  render();
+  warmTop(4);
+}
+// Pull the real post for the highest-fit cards in the background, best first,
+// so the ones you are most likely to answer are already there when you arrive.
+// Spaced by the same queue as everything else, so it never floods.
+async function warmTop(n){
+  if(!CAN.fetchThread) return;
+  for(const t of DECK.slice(0, n)){
+    if(t._tried || !truncated(t)) continue;
+    t._tried = true;
+    const r = await spacedFull(t);
+    if(r.ok && (r.post_text||'').trim()){
+      t.post_text = r.post_text; t._comments = r.comments || [];
+      if(DECK[I] && DECK[I].id === t.id){
+        const el = document.getElementById('postblock');
+        if(el) el.innerHTML = postBlock(t);
+      }
+    } else if(r.retry) { t._tried = false; break; }
+  }
+}
+async function loadSaved(){
+  const d = await api('/api/reddit/prospects');
+  SAVED = d.people || [];
+  render();
+}
+function go(v){
+  VIEW = v;
+  for(const [id,name] of [['nav-deck','deck'],['nav-reps','replies'],['nav-saved','saved']])
+    document.getElementById(id).className = (v===name ? 'on' : '');
+  if(v === 'saved' && !SAVED.length) return loadSaved();
+  render();
+}
+
+function render(){
+  const v = document.getElementById('view'), a = document.getElementById('actions');
+  document.getElementById('htitle').textContent =
+    VIEW==='deck' ? 'Reddit' : VIEW==='replies' ? 'Replies to you' : 'Saved people';
+  if(VIEW === 'replies'){ renderReplies(v, a); return; }
+  if(VIEW === 'saved'){ renderSaved(v, a); return; }
+  renderDeck(v, a);
+}
+
+// ---------- the queue, one post at a time ----------
+// The stored score is whatever it was when the post was COLLECTED, which is
+// minutes after it went up, so it is almost always 0. Printing that 0 as "0
+// points" would be a measurement we never took. Say so instead, and show a
+// real number when a refresh has given us one.
+function scorePill(t){
+  const n = t.score;
+  if(n > 0) return `<span class="pill ${n>=10?'hot':''}">${n} point${n===1?'':'s'}</span>`;
+  if(t.score_at) return `<span class="pill">0 points</span>`;
+  return `<span class="pill" style="color:var(--faint)">votes not checked</span>`;
+}
+// A thread that takes no comment, said on the card. The board at the desk has
+// two piles and sends these to the Voice lab; the phone has one deck, so the
+// honest thing is to say so here rather than let an answer get dictated into a
+// thread that cannot take it.
+//
+// Truthy rather than `=== true`, on purpose, because the same page is served by
+// two servers: the Mac answers this endpoint out of its own store, where these
+// are 1 and 0, and the Worker out of D1, where they are the same. Either way
+// unknown arrives as null and reads as answerable, which is the default the
+// whole three-state rule exists to protect.
+function closedPill(t){
+  if(t.archived) return '<span class="pill old">archived, no new comments</span>';
+  if(t.locked) return '<span class="pill old">locked by a mod</span>';
+  return '';
+}
+// What today is, said once at the top of the first card. The point is that you
+// can trust the list is short because it is selective, not because collection
+// is broken.
+function todayLine(){
+  const c = COUNTS;
+  if(!c.pool) return '';
+  const nw = c.new_subs ? `, ${c.new_subs} somewhere new` : '';
+  return `<div class="shint" style="margin:0 0 12px">
+    <b>${c.shown} worth your morning</b> out of ${c.pool} still open.
+    ${c.sure} the judge is sure about${nw}.</div>`;
+}
+// Where the voice set stands, on the first card, because this is the screen the
+// replies that feed it get written on. It was only ever printed by a terminal
+// command, which is no place for the one measure of whether the drafts sound
+// like him.
+// Said when the day's list had to reach past 24 hours to fill itself, which
+// means the collector is behind rather than the internet being quiet. Without
+// it a week of stale threads reads exactly like a week of fresh ones.
+function stretchLine(){
+  if(!WIDENED) return '';
+  const d = Math.round((WINDOW_H||0)/24);
+  return `<div class="banner"><b>Nothing fresh to answer.</b>
+    These go back ${d} day${d===1?'':'s'}, because there was not enough from the
+    last day to fill a list. A thread this old still takes a comment, it just
+    gets read by fewer people.</div>`;
+}
+function withinAge(rows, maxH){
+  return (rows || []).filter(r => (r.age_hours == null) || r.age_hours <= maxH);
+}
+// Offered only when there is actually something older to show, so the button
+// never promises a deck it cannot produce.
+function widenLine(){
+  const older = ALL_PICKS.length - DECK.length;
+  if(!older && AGE_MAX >= AGE_STEPS[AGE_STEPS.length-1]) return '';
+  const next = AGE_STEPS.find(h => h > AGE_MAX);
+  const ready = DECK.length;
+  if(!next) return `<div class="shint" style="margin:0 0 12px">
+    Showing everything from the last ${AGE_MAX} hours.</div>`;
+  const gain = withinAge(ALL_PICKS, next).length - ready;
+  return `<div class="shint" style="margin:0 0 12px">
+    <b>${ready}</b> from the last ${AGE_MAX} hours.
+    ${gain > 0
+      ? `<a href="#" onclick="widen();return false"><b>${gain} more</b> going back ${next}h</a>`
+      : `Nothing older worth showing yet.`}</div>`;
+}
+function widen(){
+  const next = AGE_STEPS.find(h => h > AGE_MAX);
+  if(!next) return;
+  AGE_MAX = next;
+  DECK = withinAge(ALL_PICKS, AGE_MAX);
+  render();
+}
+function voiceLine(){
+  const v = VOICE_SET;
+  if(!v || !v.target) return '';
+  const done = v.usable || 0, want = v.target;
+  const pct = Math.min(100, Math.round(100*done/want));
+  const tail = done < 3
+    ? 'Not used yet, it starts at 3.'
+    : (done >= want ? 'Target reached.' : (want - done) + ' more to go.');
+  return `<div class="shint" style="margin:0 0 12px">
+    <b>Your voice: ${done} of ${want}</b> replies the drafter can learn from. ${tail}
+    <div style="height:5px;border-radius:3px;background:var(--line);margin-top:6px">
+      <div style="height:5px;border-radius:3px;width:${pct}%;background:var(--ink)"></div>
+    </div></div>`;
+}
+function staleBanner(){
+  const h = HEALTH.hours_since_collected;
+  if(h == null || h < 36) return '';
+  const days = Math.round(h/24);
+  return `<div class="banner"><b>Nothing new in ${days} days.</b> The collector on the
+    other Mac has stopped, so this is the old pile. Worth clearing, but new threads
+    need the collector awake.</div>`;
+}
+function renderDeck(v, a){
+  document.getElementById('hcount').textContent =
+    DECK.length ? (I+1) + ' of ' + DECK.length : '';
+  document.getElementById('pbar').style.width =
+    DECK.length ? ((I)/DECK.length*100).toFixed(1)+'%' : '0';
+  const t = cur();
+  if(!t){
+    const older = ALL_PICKS.length - DECK.length;
+    const next = AGE_STEPS.find(h => h > AGE_MAX);
+    v.innerHTML = staleBanner() + `<div class="empty"><b>Done with the last
+      ${AGE_MAX} hours.</b><br>` + (older && next
+        ? `${older} older thread${older===1?'':'s'} behind this.
+           <br><br><button class="btn" onclick="widen()">Go back ${next} hours</button>`
+        : `Nothing older either. The collector runs hourly, so check back.`)
+      + `</div>`;
+    a.innerHTML = '';
+    return;
+  }
+  v.innerHTML = staleBanner() + stretchLine() + (I === 0 ? todayLine() + widenLine() + voiceLine() : '') + `
+  <div class="step">
+    <div class="slabel"><span class="snum">1</span><span class="sname">The post</span></div>
+    <div class="card">
+      <div class="t">${esc(t.title)}</div>
+      <div class="meta">
+        <span class="pill">r/${esc(t.subreddit)}</span>
+        <span class="pill ${t.age_hours>72?'old':''}">${t.age_approx?'about ':''}${age(t.age_hours||0)}</span>
+        <span class="pill">${t.num_comments||0} repl${t.num_comments===1?'y':'ies'}</span>
+        ${scorePill(t)}
+        ${closedPill(t)}
+        <span class="pill ${(t.fit||0)>0.7?'hot':''}">fit ${((t.fit||0)*100).toFixed(0)}</span>
+        ${t.status==='drafted'?'<span class="pill hot">draft ready</span>':''}
+        ${t.why_picked?`<span class="pill ${t.why_picked==='somewhere new'?'hot':''}">${esc(t.why_picked)}</span>`:''}
+        ${t.asked_at?'<span class="pill" style="border-color:var(--good);color:var(--good)">already asked</span>':''}
+      </div>
+      ${t.why?`<div class="why">${esc(t.why)}</div>`:''}
+      ${t.post_rule_says?`<div class="warnline"><b>before you post here:</b> ${esc(t.post_rule_says)}</div>`:''}
+      <div id="postblock">${postBlock(t)}</div>
+      <a class="btn" href="${esc(t.url)}" target="_blank" rel="noopener">Open in Reddit ↗</a>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="slabel"><span class="snum">2</span><span class="sname">Say your piece</span></div>
+    <div class="shint">Tap the box, then the mic key on your keyboard, and just talk.
+      Your words are the spine of the draft, not a hint. Rough is fine.</div>
+    <textarea class="say" id="angle" placeholder="What do you actually want to say to them?"
+      onblur="save('angle', this.value)">${esc(t.angle||'')}</textarea>
+    ${micRow('angle')}
+    <div class="voice" style="margin-top:9px">
+      <span class="lbl">write as</span>
+      ${VOICES.map(([id,label]) =>
+        `<button class="chip ${VOICE===id?'on':''}" onclick="setVoice('${id}')">${label}</button>`).join('')}
+    </div>
+    <div class="two">
+      <button class="btn go" onclick="draft(false,this)">Draft from that</button>
+      <button class="btn" onclick="draft(true,this)">Just write one</button>
+    </div>
+  </div>
+  <div id="rest">${t.draft ? stepsThree(t) : ''}</div>`;
+  // Landing on a card is the signal to go and get its post: one request, for
+  // the one thing you are looking at. When no thread read is possible the card
+  // already carries whatever the collector managed to save, so there is nothing
+  // to go and get.
+  if(CAN.fetchThread && truncated(t) && !t._tried) fetchFull(false, null);
+  else prefetchNext();
+  a.innerHTML = `<div class="row">
+    <button class="btn mini" onclick="skip()">Skip</button>
+    <button class="btn mini ${t.prospect?'done':''}" style="width:100%" onclick="star(this)">
+      ${t.prospect?'★ saved':'☆ save this person'}</button>
+    <button class="btn mini" onclick="step(1)">Next ›</button>
+  </div>`;
+}
+
+// What the collector stored is the LISTING preview, capped at 281 characters,
+// which is why so many posts trailed off mid-sentence and sent you to Reddit to
+// read the rest. Anything that short or ending in an ellipsis is treated as
+// incomplete and fetched in full.
+function truncated(t){
+  const s = (t.post_text || '').trim();
+  return !s || s.length < 330 || /(\.\.\.|…)$/.test(s);
+}
+function postBlock(t){
+  if(t._loading)
+    return `<div class="why" style="color:var(--faint)">Reading the whole post…</div>`;
+  const post = (t.post_text || '').trim();
+  const long = post.length > 900;
+  const failed = t._failed
+    ? `<div class="warnline">${esc(t._failed)}</div>` : '';
+  const got = t._comments || t.comments || [];
+  const comments = got.length
+    ? `<details style="margin-top:11px"><summary style="color:var(--accent);font-weight:600;font-size:14px">
+         ${got.length} comment${got.length===1?'':'s'}</summary>
+       ${got.map(c => `<div class="mine">${esc(c)}</div>`).join('')}</details>`
+    : '';
+  if(post && !truncated(t))
+    return `<div class="body ${long?'':'all'}" id="pb">${esc(post)}</div>
+      ${long?`<button class="more" onclick="document.getElementById('pb').classList.add('all');this.remove()">read the whole post</button>`:''}
+      ${comments}${failed}`;
+  // Still short: show what there is. Offer the fetch again by hand only where a
+  // thread read can actually happen; otherwise that button is a dead end with a
+  // confident label. The paste box is the path that always works.
+  const again = CAN.fetchThread
+    ? `<button class="btn" onclick="fetchFull(true, this)">Read the full post</button>`
+    : `<div class="micnote" style="margin:8px 0 0">Reddit stopped handing threads
+         to anyone logged out, so this is all the collector could save. Open it
+         below and paste the rest in if you need it.</div>`;
+  return `${post?`<div class="quote">${esc(post)}</div>`
+                :(t.snippet?`<div class="quote">${esc(t.snippet)}</div>`:'')}
+    ${failed}
+    ${again}
+    <textarea class="say" id="post" placeholder="Or paste the post here…"
+      onblur="save('post_text', this.value)" style="margin-top:8px"></textarea>
+    ${comments}`;
+}
+// The public thread feed throttles after about one read, so requests are run
+// one at a time with a gap between them. Flipping through cards fast therefore
+// queues rather than failing, and reading at a human pace never hits it at all.
+let lastFull = 0, fullBusy = false;
+const FULL_GAP = 6000;
+async function spacedFull(t){
+  while(fullBusy) await new Promise(r => setTimeout(r, 250));
+  fullBusy = true;
+  try{
+    const wait = Math.max(0, FULL_GAP - (Date.now() - lastFull));
+    if(wait) await new Promise(r => setTimeout(r, wait));
+    return await api('/api/reddit/full', {id:t.id, url:t.url});
+  } finally { lastFull = Date.now(); fullBusy = false; }
+}
+// Pull the next card's post while you are still reading this one. By the time
+// you get there it is already on the page and nothing had to wait.
+async function prefetchNext(){
+  if(!CAN.fetchThread) return;
+  const n = DECK[I+1];
+  if(!n || n._tried || !truncated(n)) return;
+  n._tried = true;
+  const r = await spacedFull(n);
+  if(r.ok && (r.post_text||'').trim()){ n.post_text = r.post_text; n._comments = r.comments || []; }
+  else if(r.retry) n._tried = false;
+}
+async function fetchFull(manual, btn){
+  const t = cur(); if(!t) return;
+  if(!CAN.fetchThread){
+    t._failed = 'Reddit will not hand a thread to anyone logged out. Open it '
+      + 'in Reddit and paste it in.';
+    const el0 = document.getElementById('postblock');
+    if(el0) el0.innerHTML = postBlock(t);
+    return;
+  }
+  t._tried = true; t._loading = true; t._failed = '';
+  const el = document.getElementById('postblock');
+  if(el) el.innerHTML = postBlock(t);
+  const r = await spacedFull(t);
+  t._loading = false;
+  if(r.ok && (r.post_text || '').trim()){
+    t.post_text = r.post_text;
+    t._comments = r.comments || [];
+  } else {
+    t._failed = r.retry ? 'Reddit is throttling. Give it a few seconds and tap again.'
+                        : (r.error || 'Could not read it. Open it in Reddit and paste it in.');
+    if(r.retry) t._tried = false;
+  }
+  const el2 = document.getElementById('postblock');
+  if(el2) el2.innerHTML = postBlock(t);
+  prefetchNext();
+}
+
+// Steps 3 to 5 only exist once there is something to look at.
+function stepsThree(t){
+  return `
+  <div class="step">
+    <div class="slabel"><span class="snum">3</span><span class="sname">The draft</span></div>
+    <div class="shint">Yours to edit. Nothing posts from here.</div>
+    <textarea class="draft" id="draft" onblur="save('draft', this.value, 'edit')">${esc(t.draft||'')}</textarea>
+  </div>
+  <div class="step">
+    <div class="slabel"><span class="snum">4</span><span class="sname">Not quite right?</span></div>
+    <div class="chips">
+      ${Object.entries(FIXES).map(([k,l]) =>
+        `<button class="chip" onclick="fix('${k}',this)">${l}</button>`).join('')}
+    </div>
+    <textarea class="fix" id="fixbox" placeholder="Or say what to change, out loud…"></textarea>
+    ${micRow('fixbox')}
+    <div class="two">
+      <button class="btn" onclick="fix(document.getElementById('fixbox').value,this)">Rewrite it</button>
+      <button class="btn" onclick="back(this)" ${(prevDrafts[t.id]||[]).length?'':'disabled'}>‹ Previous</button>
+    </div>
+  </div>
+  <div class="step">
+    <div class="slabel"><span class="snum">5</span><span class="sname">Post it</span></div>
+    <div class="shint">Copy takes the draft, the button opens the thread in the Reddit
+      app. Paste, post, then come back and mark it.</div>
+    <button class="btn go" onclick="copyGo(this)">Copy and open the thread</button>
+    <button class="btn done" onclick="posted()">✓ I posted it</button>
+  </div>`;
+}
+
+// A record button needs BOTH halves to be true, and they fail for different
+// reasons, so both are checked.
+//
+// The browser half: getUserMedia does not exist at all over plain http, which is
+// how the board on the home network gets opened.
+//
+// The server half: the audio has to be transcribed somewhere. The Mac does it on
+// the device with bundled Whisper. The Worker has no speech model behind it, and
+// over https the browser half passes there, so without this check the edge board
+// would show a record button that records happily and then fails on upload.
+//
+// Either way the fallback is the keyboard's own mic key, which types on the
+// device and needs nothing from either end.
+const BROWSER_CAN_RECORD = !!(window.isSecureContext && navigator.mediaDevices
+                      && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+function micRow(targetId){
+  if(!(BROWSER_CAN_RECORD && CAN.transcribe))
+    return `<div class="micnote" style="margin-top:7px">Tap the box, then the mic
+      key on your keyboard. It types straight onto the phone.</div>`;
+  return `<div class="microw">
+    <button class="mic" id="mic-${targetId}" onclick="toggleRec('${targetId}')"
+      aria-label="record">&#9679;</button>
+    <span class="micnote" id="micmsg-${targetId}">Tap to record. It is transcribed
+      on this Mac, and the audio is not sent anywhere else.</span>
+  </div>`;
+}
+let rec = null, recFor = null, recChunks = [], recStart = 0, recTimer = null;
+async function toggleRec(targetId){
+  if(rec && recFor === targetId) return stopRec();
+  if(rec) stopRec();
+  const btn = document.getElementById('mic-'+targetId);
+  const msg = document.getElementById('micmsg-'+targetId);
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    recChunks = []; recFor = targetId; recStart = Date.now();
+    rec = new MediaRecorder(stream);
+    rec.ondataavailable = e => { if(e.data && e.data.size) recChunks.push(e.data); };
+    rec.onstop = async () => {
+      stream.getTracks().forEach(s => s.stop());
+      clearInterval(recTimer);
+      const took = Math.round((Date.now() - recStart) / 1000);
+      btn.className = 'mic busy';
+      msg.textContent = 'Writing it down...';
+      const blob = new Blob(recChunks, {type: (rec && rec.mimeType) || 'audio/mp4'});
+      rec = null; recFor = null;
+      let r;
+      try{
+        r = await (await fetch(q('/api/reddit/transcribe'), {
+          method:'POST', headers:{'X-Audio-Type': blob.type}, body: blob})).json();
+      } catch(e){ r = {ok:false, error:'could not reach the Mac'}; }
+      btn.className = 'mic'; btn.innerHTML = '&#9679;';
+      if(r.ok && (r.text||'').trim()){
+        const box = document.getElementById(targetId);
+        box.value = (box.value ? box.value.trim() + ' ' : '') + r.text.trim();
+        box.dispatchEvent(new Event('blur'));
+        msg.textContent = 'Got it. Tap again to add more.';
+        const t = cur();
+        if(t) api('/api/reddit/event', {id:t.id, kind:'dictate',
+          detail:{field:targetId, seconds:took, chars:(r.text||'').length}});
+      } else {
+        msg.textContent = r.error || 'Did not catch that.';
+      }
+    };
+    rec.start();
+    btn.className = 'mic rec'; btn.innerHTML = '&#9632;';
+    recTimer = setInterval(() => {
+      msg.textContent = 'Listening... ' + Math.round((Date.now()-recStart)/1000) + 's';
+    }, 400);
+  } catch(e){
+    msg.textContent = (e && e.name === 'NotAllowedError')
+      ? 'Microphone permission was refused.'
+      : 'No microphone here. Use the keyboard mic key instead.';
+  }
+}
+function stopRec(){ if(rec && rec.state !== 'inactive') rec.stop(); }
+
+function setVoice(v){ VOICE = v; localStorage.setItem('voice', v); render(); }
+function step(n){
+  const next = I + n;
+  if(next < 0 || next >= DECK.length) return;
+  I = next; render(); window.scrollTo({top:0});
+}
+// Every box writes through, so a dictated angle survives a phone locking itself.
+async function save(field, value, src){
+  const t = cur(); if(!t) return;
+  t[field] = value;
+  // `src` says whose words these are. The server cannot tell: a draft box save
+  // looks identical whether the model just filled it or he just rewrote it by
+  // hand, and that difference is the whole point of keeping them.
+  const body = {id:t.id, [field]:value};
+  if(field === 'draft') body.draft_src = src || 'edit';
+  await api('/api/reddit/item', body);
+}
+
+async function draft(voiceOnly, btn){
+  const t = cur(); if(!t) return;
+  const ang = (document.getElementById('angle')||{}).value || '';
+  const pt = (document.getElementById('post')||{}).value || t.post_text || '';
+  if(!voiceOnly && !ang.trim()){
+    const el = document.getElementById('angle');
+    if(el){ el.focus(); toast('Say something first, or hit "Just write one".'); }
+    return;
+  }
+  const was = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Writing…';
+  const r = await api('/api/reddit/draft', {
+    id:t.id, url:t.url, author:VOICE, context:'new_comment',
+    angle: voiceOnly ? '' : ang, post_text: pt});
+  btn.disabled = false; btn.textContent = was;
+  if(!r.ok){ toast(r.error || 'draft failed'); return; }
+  t.draft = r.draft; t.angle = ang; t.post_text = pt;
+  // What the MODEL wrote, kept apart from the box. `t.draft` cannot answer "did
+  // he change it", because the box saves on blur and the blur writes his edit
+  // straight into t.draft: by the time Copy ran, his text and t.draft were the
+  // same string and `edited` was false every single time.
+  t.modelDraft = r.draft;
+  await api('/api/reddit/item', {id:t.id, draft:r.draft, angle:ang, post_text:pt,
+                                 status:'drafted', draft_src:'model'});
+  t.status = 'drafted';
+  document.getElementById('rest').innerHTML = stepsThree(t);
+  document.getElementById('rest').scrollIntoView({block:'start', behavior:'smooth'});
+}
+
+async function fix(instruction, btn){
+  const t = cur(); if(!t) return;
+  const box = document.getElementById('draft');
+  const now = (box.value||'').trim();
+  if(!now){ toast('Nothing to rewrite yet.'); return; }
+  const what = (instruction||'').trim();
+  if(!what){ toast('Say what to change.'); return; }
+  (prevDrafts[t.id] = prevDrafts[t.id] || []).push(now);
+  const was = btn.textContent;
+  btn.disabled = true; btn.textContent = '…';
+  const r = await api('/api/reddit/revise', {
+    draft:now, instruction:what, post_text:t.post_text||'',
+    angle:t.angle||'', author:VOICE});
+  btn.disabled = false; btn.textContent = was;
+  if(!r.ok){ prevDrafts[t.id].pop(); toast(r.error || 'rewrite failed'); return; }
+  box.value = r.draft; t.draft = r.draft; t.modelDraft = r.draft;
+  const fb = document.getElementById('fixbox'); if(fb) fb.value = '';
+  await api('/api/reddit/item', {id:t.id, draft:r.draft, draft_src:'revise',
+                                 instruction:what});
+  document.getElementById('rest').innerHTML = stepsThree(t);
+}
+async function back(btn){
+  const t = cur(); if(!t) return;
+  const prev = (prevDrafts[t.id]||[]).pop();
+  if(!prev) return;
+  t.draft = prev; t.modelDraft = prev;
+  await api('/api/reddit/item', {id:t.id, draft:prev, draft_src:'model'});
+  document.getElementById('rest').innerHTML = stepsThree(t);
+}
+
+async function copyDraft(text, btn){
+  try{ await navigator.clipboard.writeText(text); return true; }
+  catch(e){
+    // Older iOS refuses the async clipboard outside a few contexts. Select the
+    // text instead, so there is always a way to get it out.
+    const el = document.getElementById('draft');
+    if(el){ el.focus(); el.select(); }
+    if(btn) btn.textContent = 'Selected, hold to copy';
+    return false;
+  }
+}
+async function copyGo(btn){
+  const t = cur(); if(!t) return;
+  const text = (document.getElementById('draft')||{}).value || t.draft || '';
+  const ok = await copyDraft(text, btn);
+  if(!ok) return;
+  btn.textContent = 'Copied, opening…';
+  // Measured against what the model last produced. Where that is not known
+  // (a draft written in an earlier session, before this page was loaded) the
+  // honest answer is null, not false: unknown and unchanged are not the same.
+  const base = (t.modelDraft === undefined) ? null : String(t.modelDraft).trim();
+  const wasEdited = base === null ? null : (text.trim() !== base);
+  api('/api/reddit/event', {id:t.id, kind:'copy', detail:{
+    chars: text.length, edited: wasEdited,
+    revisions: (prevDrafts[t.id]||[]).length}});
+  api('/api/reddit/item', {id:t.id, draft:text, draft_src:'final'});
+  // Opened as a normal link so iOS hands it to the Reddit app when it is
+  // installed and to Safari when it is not. Both are fine.
+  window.open(t.url, '_blank', 'noopener');
+  setTimeout(() => { btn.textContent = 'Copy and open the thread'; }, 2200);
+}
+
+async function posted(){
+  const t = cur(); if(!t) return;
+  await mark(t, 'posted', 'Posted. Nice.');
+}
+// Skipping without saying why throws away the only label that teaches the
+// surfacing what NOT to show. So the reason is asked for up front, on a real
+// screen, rather than offered in a toast that disappears.
+function skip(){
+  const t = cur(); if(!t) return;
+  openSheet(`
+    <h2>Why not this one?</h2>
+    <div class="q">This is the part that teaches it. Enough of these and the
+      queue starts arriving without the kinds you keep throwing away.</div>
+    <div class="rgrid">
+      ${Object.entries(REASONS).map(([k,l]) =>
+        `<button onclick="doSkip('${k}')">${l}</button>`).join('')}
+    </div>
+    <textarea class="fix" id="skipwhy" style="margin-top:9px"
+      placeholder="Or say it in your own words…"></textarea>
+    ${micRow('skipwhy')}
+    <button class="btn" onclick="doSkip('other')">Skip with that reason</button>
+    <button class="btn" onclick="closeSheet()">Cancel</button>
+    <button class="btn" style="color:var(--faint)" onclick="doSkip('')">Just skip it</button>`);
+}
+async function doSkip(reason){
+  const t = cur(); if(!t) return;
+  const box = document.getElementById('skipwhy');
+  const note = (box && box.value || '').trim();
+  closeSheet();
+  const i = DECK.findIndex(x => x.id === t.id);
+  await api('/api/reddit/item', {id:t.id, status:'skip',
+                                 reason: reason || null, note: note || null});
+  if(i >= 0) DECK.splice(i, 1);
+  if(I >= DECK.length) I = Math.max(0, DECK.length - 1);
+  render(); window.scrollTo({top:0});
+  toast(reason || note ? 'Skipped: ' + (REASONS[reason] || note.slice(0,40)) : 'Skipped.',
+        t, i, 'skipped');
+}
+function openSheet(html){
+  document.getElementById('sheetin').innerHTML = html;
+  document.getElementById('sheet').classList.add('open');
+}
+function closeSheet(){ document.getElementById('sheet').classList.remove('open'); }
+async function mark(t, status, msg){
+  const i = DECK.findIndex(x => x.id === t.id);
+  await api('/api/reddit/item', {id:t.id, status});
+  if(i >= 0) DECK.splice(i, 1);
+  if(I >= DECK.length) I = Math.max(0, DECK.length - 1);
+  render(); window.scrollTo({top:0});
+  toast(msg, t, i, status);
+}
+async function star(btn){
+  const t = cur(); if(!t) return;
+  const on = !t.prospect;
+  // Why they stood out is the whole value of the list later, so ask for it once
+  // and let it be dictated like everything else.
+  const note = on ? (prompt('Why this one? (optional, for when the app is ready)') || '') : '';
+  const r = await api('/api/reddit/prospect', {id:t.id, on, note});
+  if(r.ok){ t.prospect = on; SAVED = []; render(); toast(on?'Saved them.':'Unsaved.'); }
+}
+
+// ---------- replies to you ----------
+function renderReplies(v, a){
+  document.getElementById('hcount').textContent = REPS.length ? REPS.length + ' waiting' : '';
+  document.getElementById('pbar').style.width = '0';
+  a.innerHTML = '';
+  if(!REPS.length){
+    v.innerHTML = `<div class="empty"><b>No replies waiting.</b><br>
+      When someone answers one of your comments it shows up here, pulled from your
+      Reddit reply inbox.</div>`;
+    return;
+  }
+  v.innerHTML = REPS.map(repCard).join('');
+}
+function repCard(r){
+  const when = r.created_at ? new Date(r.created_at).toLocaleDateString(undefined,
+    {month:'short', day:'numeric'}) : '';
+  return `<div class="rep" id="r-${esc(r.id)}">
+    <div class="who">u/${esc(r.author)} replied${when?' · '+esc(when):''}</div>
+    ${r.post_title?`<div class="on">on: ${esc(r.post_title)}</div>`:''}
+    <div class="said">${esc(r.body||'')}</div>
+    ${r.my_comment?`<div class="mine"><b>you said:</b> ${esc(r.my_comment.slice(0,400))}</div>`:''}
+    <a class="btn" href="${esc(r.url)}" target="_blank" rel="noopener">Open the reply ↗</a>
+    <textarea class="fix" id="ra-${esc(r.id)}" placeholder="What do you want to say back? (optional)"></textarea>
+    ${micRow('ra-'+r.id)}
+    <div class="two">
+      <button class="btn go" onclick="draftReply('${esc(r.id)}', this)">Draft a reply</button>
+      <button class="btn" onclick="ack('${esc(r.id)}')">Done with it</button>
+    </div>
+    <div id="rd-${esc(r.id)}"></div>
+    ${askBlock(r)}
+  </div>`;
+}
+// Asking is tracked against the PERSON. The same human turns up in several
+// threads, and being pitched twice is how a conversation becomes spam, so once
+// they are on the list the button is gone and only the outcome is left.
+const OUTCOMES = {replied:'they replied', signed_up:'they signed up', ignored:'nothing'};
+function askBlock(r){
+  const who = (r.author || '').toLowerCase();
+  if(r.asked_at){
+    const when = new Date(r.asked_at).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    return `<div class="mine" style="border-left-color:var(--good)">
+      <b>Asked ${esc(when)}.</b> ${r.ask_outcome && r.ask_outcome!=='sent'
+        ? esc(OUTCOMES[r.ask_outcome] || r.ask_outcome) : 'What came back?'}
+      <div class="chips" style="margin-top:7px">
+        ${Object.entries(OUTCOMES).map(([k,l]) =>
+          `<button class="chip ${r.ask_outcome===k?'on':''}"
+             onclick="askOutcome('${esc(who)}','${k}',this)">${l}</button>`).join('')}
+      </div></div>`;
+  }
+  return `<div style="margin-top:10px">
+    <button class="btn" onclick="drawAsk('${esc(r.id)}','thread',this)">Ask them to try it</button>
+    <div id="ask-${esc(r.id)}"></div>
+  </div>`;
+}
+async function drawAsk(id, channel, btn){
+  const r = REPS.find(x => x.id === id); if(!r) return;
+  const was = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Writing...';
+  const out = await api('/api/reddit/ask', {
+    author: r.author, their_words: r.body || '',
+    my_comment: r.my_comment || '', channel});
+  btn.disabled = false; btn.textContent = was;
+  const box = document.getElementById('ask-' + id);
+  if(out.skip){
+    box.innerHTML = `<div class="warnline">Not this one: ${esc(out.reason||'')}</div>`;
+    return;
+  }
+  if(!out.ok){ box.innerHTML = `<div class="warnline">${esc(out.error||'failed')}</div>`; return; }
+  // Public reply is the default and the safer one: it continues the
+  // conversation where it already is, and it is visible rather than a pitch
+  // arriving in someone's inbox.
+  box.innerHTML = `
+    <div class="chips" style="margin-top:9px">
+      ${['thread','dm'].map(c => `<button class="chip ${c===channel?'on':''}"
+         onclick="drawAsk('${esc(id)}','${c}',this)">${c==='thread'?'reply in thread':'direct message'}</button>`).join('')}
+    </div>
+    <textarea class="draft" id="askt-${esc(id)}">${esc(out.text)}</textarea>
+    <button class="btn go" onclick="copyAsk('${esc(id)}','${channel}',this)">Copy and open</button>
+    <button class="btn done" onclick="markAsked('${esc(id)}','${channel}')">I sent it</button>`;
+  box.scrollIntoView({block:'nearest', behavior:'smooth'});
+}
+async function copyAsk(id, channel, btn){
+  const r = REPS.find(x => x.id === id); if(!r) return;
+  const el = document.getElementById('askt-' + id);
+  try{ await navigator.clipboard.writeText(el.value); btn.textContent = 'Copied, opening...'; }
+  catch(e){ el.focus(); el.select(); btn.textContent = 'Selected, hold to copy'; return; }
+  // A DM goes to their profile, a public reply goes back to the thread.
+  window.open(channel === 'dm'
+    ? 'https://www.reddit.com/user/' + encodeURIComponent(r.author)
+    : r.url, '_blank', 'noopener');
+  setTimeout(() => { btn.textContent = 'Copy and open'; }, 2200);
+}
+async function markAsked(id, channel){
+  const r = REPS.find(x => x.id === id); if(!r) return;
+  const el = document.getElementById('askt-' + id);
+  const res = await api('/api/reddit/ask-sent', {
+    author: r.author, id: r.post_id, reply_id: r.id,
+    channel, text: el ? el.value : ''});
+  if(res.ok){
+    r.asked_at = new Date().toISOString(); r.ask_outcome = 'sent';
+    render(); toast('Noted. They will not be asked again.');
+  }
+}
+async function askOutcome(author, outcome, btn){
+  const res = await api('/api/reddit/ask-outcome', {author, outcome});
+  if(res.ok){
+    const r = REPS.find(x => (x.author||'').toLowerCase() === author);
+    if(r) r.ask_outcome = outcome;
+    render(); toast(outcome === 'signed_up' ? 'That is the one that counts.' : 'Noted.');
+  }
+}
+
+async function draftReply(id, btn){
+  const r = REPS.find(x => x.id === id); if(!r) return;
+  const ang = (document.getElementById('ra-'+id)||{}).value || '';
+  const was = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Writing…';
+  // reply_to_reply gets its own, much shorter prompt: this is the second turn of
+  // a conversation that is already going, not an opening comment.
+  const out = await api('/api/reddit/draft', {
+    url: r.post_url || r.url, author: VOICE, context:'reply_to_reply',
+    target_comment: r.body || '', my_comment: r.my_comment || '',
+    post_text: r.post_text || r.post_snippet || '', angle: ang});
+  btn.disabled = false; btn.textContent = was;
+  const box = document.getElementById('rd-'+id);
+  if(!out.ok){ box.innerHTML = `<div class="mine" style="color:var(--err)">${esc(out.error||'failed')}</div>`; return; }
+  box.innerHTML = `<textarea class="draft" id="rdt-${esc(id)}">${esc(out.draft)}</textarea>
+    <button class="btn go" onclick="copyReply('${esc(id)}', this)">Copy and open the thread</button>`;
+  box.scrollIntoView({block:'nearest', behavior:'smooth'});
+}
+async function copyReply(id, btn){
+  const r = REPS.find(x => x.id === id); if(!r) return;
+  const el = document.getElementById('rdt-'+id);
+  try{ await navigator.clipboard.writeText(el.value); btn.textContent = 'Copied, opening…'; }
+  catch(e){ el.focus(); el.select(); btn.textContent = 'Selected, hold to copy'; return; }
+  window.open(r.url, '_blank', 'noopener');
+  setTimeout(() => { btn.textContent = 'Copy and open the thread'; }, 2200);
+}
+async function ack(id){
+  await api('/api/reddit/reply-ack', {id, on:true});
+  REPS = REPS.filter(x => x.id !== id);
+  render(); toast('Cleared.');
+}
+
+// ---------- people worth going back to ----------
+function renderSaved(v, a){
+  document.getElementById('hcount').textContent = SAVED.length ? SAVED.length + ' saved' : '';
+  document.getElementById('pbar').style.width = '0';
+  a.innerHTML = '';
+  const grounds = NEWSUBS.length ? `
+    <div class="shint" style="margin:18px 0 8px"><b>Worth breaking into.</b>
+      These keep producing posts the judge likes and you have never posted in them.</div>
+    ${NEWSUBS.map(s => `<div class="sv">
+      <div class="t" style="font-size:16px">r/${esc(s.subreddit)}</div>
+      <div class="meta">
+        <span class="pill">${s.good} good of ${s.n}</span>
+        <span class="pill ${s.hit_rate>=0.1?'hot':''}">${Math.round(s.hit_rate*100)}% hit rate</span>
+      </div>
+      <a class="btn" href="https://www.reddit.com/r/${encodeURIComponent(s.subreddit)}/new/"
+         target="_blank" rel="noopener">Open r/${esc(s.subreddit)} ↗</a>
+    </div>`).join('')}` : '';
+  if(!SAVED.length){
+    v.innerHTML = `<div class="empty"><b>Nobody saved yet.</b><br>
+      Hit "save this person" on anyone who really feels the problem. This is the
+      list you work through when the app is ready to show.</div>` + grounds;
+    return;
+  }
+  v.innerHTML = `<div class="shint" style="margin:0 0 10px 0">People who felt it.
+    Go back to them when there is something to show.</div>` + SAVED.map(p => `
+    <div class="sv">
+      <div class="t" style="font-size:16px">${esc(p.title||'')}</div>
+      <div class="meta">
+        ${p.author?`<span class="pill">u/${esc(p.author)}</span>`:''}
+        <span class="pill">r/${esc(p.subreddit||'')}</span>
+        ${p.status?`<span class="pill">${esc(p.status)}</span>`:''}
+      </div>
+      ${p.prospect_note?`<div class="mine"><b>why:</b> ${esc(p.prospect_note)}</div>`:''}
+      ${p.snippet?`<div class="quote">${esc(p.snippet)}</div>`:''}
+      <a class="btn" href="${esc(p.url||'')}" target="_blank" rel="noopener">Open in Reddit ↗</a>
+    </div>`).join('') + grounds;
+}
+
+// ---------- toast with undo, and a reason when you skip ----------
+let toastTimer;
+function toast(msg, t, i, status){
+  const el = document.getElementById('toast');
+  el.innerHTML = `<div>${esc(msg)}</div>`
+    + (t ? `<div><button onclick="undo('${t.id}',${i})">undo</button></div>` : '');
+  el.style.display = 'block';
+  window._undo = t ? {t, i} : null;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.style.display = 'none', status==='skip' ? 11000 : 5000);
+}
+async function reason(id, r){
+  await api('/api/reddit/item', {id, status:'skip', reason:r});
+  const el = document.getElementById('toast');
+  el.innerHTML = '<div>Noted: ' + esc(REASONS[r]) + '</div>';
+  setTimeout(() => el.style.display = 'none', 1400);
+}
+async function undo(id, i){
+  await api('/api/reddit/item', {id, status:'todo'});
+  const u = window._undo;
+  if(u && u.t){ DECK.splice(Math.max(0, u.i), 0, u.t); I = Math.max(0, u.i); }
+  document.getElementById('toast').style.display = 'none';
+  render();
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+# TEMPLATE, not active yet. To enable the cloud cron:
+#   1. Promote the module out of gitignored scratch:
+#        git mv-equivalent: copy scratch/attribution -> attribution/ (repo root),
+#        same move the AEO engine took (scratch/aeo -> aeo/).
+#   2. Copy this file to .github/workflows/attribution.yml
+#   3. Add the secrets listed in README.md to the repo.
+# Until then the cron below does nothing (the file is not in .github/workflows).
+#
+# Tier 0: reads APIs, commits a ledger, never touches the outside world. Safe to
+# run fully automatic. Mirrors aeo-weekly.yml.
+
+name: Attribution sweep
+
+on:
+  schedule:
+    # Weekly, offset from the AEO sweep. ~9am Pacific Mondays.
+    - cron: '0 16 * * 1'
+  workflow_dispatch: {}   # manual "Run workflow" button for test pulls
+
+concurrency:
+  group: attribution
+  cancel-in-progress: false
+
+permissions:
+  contents: write         # commit the refreshed ledger
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Date window without Date.now() in the script: bash computes it here.
+      - name: Compute date window
+        run: |
+          echo "ATTR_SINCE=$(date -u -d '28 days ago' +%Y-%m-%d)" >> "$GITHUB_ENV"
+          echo "ATTR_UNTIL=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+
+      - name: Run the join (each source skips cleanly if its secret is unset)
+        working-directory: attribution
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_WEB_ANALYTICS_TAG: ${{ secrets.CF_WEB_ANALYTICS_TAG }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          GOOGLE_OAUTH_TOKEN: ${{ secrets.GOOGLE_OAUTH_TOKEN }}
+          GSC_SITE: ${{ secrets.GSC_SITE }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_AD_ACCOUNT: ${{ secrets.META_AD_ACCOUNT }}
+        run: python3 engine.py
+
+      - name: Commit the refreshed ledger
+        run: |
+          git config user.name  "clarence-bot"
+          git config user.email "bot@getclarence.app"
+          git add attribution/ledger.csv attribution/standings.md
+          git commit -m "attribution: sweep [skip ci]" || echo "no change"
+          git push || echo "nothing to push"

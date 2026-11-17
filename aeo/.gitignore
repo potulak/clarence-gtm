@@ -1,0 +1,14 @@
+# Secrets never get committed. The cloud job writes .env from GitHub secrets at
+# run time and deletes it before committing; locally it holds your real keys.
+.env
+
+# Raw answer transcripts (about 700 small text files per run) are committed so
+# the cockpit's "view answer" works for cloud runs, not just local ones. They
+# also still ship as a downloadable workflow artifact as a backup. If the repo
+# ever feels heavy from these, revisit moving them to object storage (R2/S3).
+
+# Scratch and build noise.
+__pycache__/
+*.pyc
+*.bak
+*.log

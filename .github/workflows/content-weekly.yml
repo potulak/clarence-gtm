@@ -1,0 +1,54 @@
+name: content-pipeline
+
+# Drafts one short /answers page per run, targeting a non-branded query the AEO
+# ledger shows we are absent from, and opens a one-tap-merge PR. The founder's
+# merge is the gate. Runs in the cloud, so it never depends on his Mac being on.
+# This replaces the Full-Disk-Access-blocked launchd job.
+
+on:
+  schedule:
+    # Publishing cadence is deliberate: one page per run, never a burst. A sudden
+    # flood of pages reads as a content farm to Google and risks a quality penalty,
+    # so we ramp like a real site. Now at 3/week (Tue, Fri, Sat); hard cap ~5/week.
+    # Each run still opens a PR that the founder merges by hand, so quality stays
+    # gated at merge no matter the cadence.
+    - cron: '0 15 * * 2,5,6'    # Tue/Fri/Sat 15:00 UTC (~8a Pacific)
+  workflow_dispatch: {}         # manual "Run workflow" button for an on-demand draft
+
+concurrency:
+  group: content-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # generate.py branches off origin/main in a worktree
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Draft one answer page and open a PR
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_MODEL: claude-sonnet-5
+        run: |
+          git config user.name "clarence-content-bot"
+          git config user.email "bot@getclarence.app"
+          python3 content/generate.py --pr
+
+      - name: Persist the written-queries record
+        run: |
+          if ! git diff --quiet -- content/written.json; then
+            git add content/written.json
+            git commit -m "content: record drafted target [skip ci]"
+            git push origin HEAD:main
+          fi

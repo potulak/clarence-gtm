@@ -1,0 +1,96 @@
+name: AEO weekly sweep
+
+# Runs the answer-engine measurement (core + exploration tiers, branded every
+# other run) roughly every 10 days, on GitHub's servers, so it no longer depends
+# on a laptop being awake. It probes all four
+# engines in parallel, writes the digest / trend / cost reports, pulls Cloudflare
+# traffic, and commits the updated ledger back to the repo. Raw answer
+# transcripts are uploaded as a downloadable artifact (kept out of git to keep
+# the repo lean). See aeo/README.md for the secret list and the design notes.
+
+on:
+  schedule:
+    # 16:00 UTC on the 1st (about 9am Pacific): once a month. Cut from three runs
+    # a month to two and then to one on 2026-08-22. A full sweep costs about $13,
+    # which made this by far the largest single charge on the API key, and answer
+    # engines do not re-rank fast enough for a 10-day cadence to tell you anything
+    # a monthly one does not. GitHub cron is always UTC.
+    - cron: '0 16 1 * *'
+  workflow_dispatch: {}   # adds a manual "Run workflow" button for test runs
+
+concurrency:
+  group: aeo-weekly
+  cancel-in-progress: false
+
+permissions:
+  contents: write         # lets the job commit the refreshed ledger back
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Write .env from secrets
+        working-directory: aeo
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          {
+            echo "OPENAI_API_KEY=$OPENAI_API_KEY"
+            echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
+            echo "PERPLEXITY_API_KEY=$PERPLEXITY_API_KEY"
+            echo "GEMINI_API_KEY=$GEMINI_API_KEY"
+            echo "CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN"
+            echo "CLOUDFLARE_ZONE_ID=$CLOUDFLARE_ZONE_ID"
+            echo "CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID"
+          } > .env
+
+      - name: Run the full sweep (all four engines, parallel)
+        working-directory: aeo
+        run: python3 probe.py --queries queries.txt --providers openai,anthropic,perplexity,gemini
+
+      - name: Reports (digest, trend, sources, cost)
+        working-directory: aeo
+        run: |
+          python3 digest.py --queries queries.txt --html || true
+          python3 trend.py > trend.txt || true
+          python3 trend.py --csv > trend.csv || true
+          python3 sources_repo.py || true
+          python3 cost.py || true
+
+      - name: Cloudflare traffic (skips cleanly if token is unset)
+        working-directory: aeo
+        run: python3 cloudflare.py || true
+
+      - name: Upload raw transcripts as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aeo-raw-${{ github.run_id }}
+          path: aeo/raw/
+          retention-days: 90
+          if-no-files-found: ignore
+
+      - name: Commit the refreshed ledger and reports
+        run: |
+          rm -f aeo/.env
+          git config user.name "clarence-aeo-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add aeo
+          if git diff --cached --quiet; then
+            echo "nothing changed, skipping commit"
+          else
+            git commit -m "aeo: sweep $(date -u +%Y-%m-%d) [skip ci]"
+            git push
+          fi

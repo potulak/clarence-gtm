@@ -1,0 +1,1967 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Clarence GTM Cockpit</title>
+<style>
+  :root {
+    --paper:#f4f2ec; --surface:#fffefb; --surface2:#faf8f2; --ink:#1c1b18;
+    --ink-soft:#57534b; --ink-faint:#8a857b; --line:#e5e0d6; --line-soft:#eeeae1;
+    --accent:#0e7b6b; --accent-ink:#0b5f52; --accent-line:#cfe6da;
+    --ok:#1f8a5b; --ok-bg:rgba(31,138,91,.12);
+    --warn:#bd7710; --warn-bg:rgba(189,119,16,.13); --warn-ink:#7a4e0a; --warn-line:#e0c48a;
+    --err:#c0392b; --err-bg:rgba(192,57,43,.11);
+    --idle:#9a948a; --idle-bg:rgba(154,148,138,.14);
+    --shadow:0 1px 2px rgba(28,27,24,.04),0 6px 20px rgba(28,27,24,.05);
+    --serif:ui-serif,Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,monospace;
+    /* back-compat aliases so the existing detailed views inherit the palette */
+    --bg:var(--paper); --card:var(--surface); --muted:var(--ink-faint);
+    --good:var(--ok); --gold:var(--warn); --blue:var(--accent-ink);
+    /* This board is light, whatever the Mac is set to. Without this the
+       native controls (selects, inputs, checkboxes) still render dark. */
+    color-scheme: light;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  h1,h2,h3 { font-family:Georgia,"Times New Roman",serif; font-weight:600; }
+  a { color:var(--blue); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  header { padding:20px 28px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:24px; background:var(--card); }
+  header h1 { margin:0; font-size:21px; }
+  .tabs { display:flex; gap:4px; }
+  .tab { padding:6px 15px; border-radius:9px; cursor:pointer; color:var(--ink-soft);
+    border:1px solid transparent; font-weight:600; font-family:var(--mono); font-size:12px;
+    letter-spacing:.02em; white-space:nowrap; }
+  .tab:hover { color:var(--ink); background:var(--paper); }
+  .tab.active { background:var(--accent); color:#fff; border-color:transparent; }
+  .navbar { position:sticky; top:0; z-index:20; background:var(--paper);
+    border-bottom:1px solid var(--line); padding:10px clamp(14px,3vw,28px); }
+  .navrow { max-width:1080px; margin:0 auto; display:flex; gap:4px; flex-wrap:wrap; align-items:center;
+    background:var(--surface2); border:1px solid var(--line); border-radius:12px; padding:4px; }
+  .navrow.secondary { margin-top:8px; background:transparent; border:none; padding:2px 0; }
+  .tabs.secondary { gap:2px; margin-left:auto; align-items:center; }
+  .tabs.secondary .more-label { font-size:11px; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.05em; margin-right:8px; }
+  .tab.small { padding:5px 11px; font-size:12px; font-weight:500; color:var(--ink-faint); }
+  .tab.small.active { background:var(--surface); color:var(--ink); border-color:var(--line); }
+  .tab.small:hover { background:var(--surface); color:var(--ink); }
+  .tab.morebtn { font-size:13px; font-weight:400; color:var(--muted); border:1px solid var(--line); }
+  .tab.morebtn.active { background:var(--bg); color:var(--ink); }
+  main { max-width:1080px; margin:0 auto; padding:24px 28px 80px; }
+  .view { display:none; } .view.active { display:block; }
+  .row { display:flex; flex-wrap:wrap; gap:14px; margin-bottom:22px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:14px 18px; min-width:120px; flex:1; }
+  .stat .n { font-size:26px; font-family:Georgia,serif; }
+  .stat .l { font-size:12px; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.04em; margin-top:2px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:18px 20px; margin-bottom:16px; }
+  h2 { font-size:17px; margin:26px 0 12px; }
+  .sub { color:var(--muted); font-size:13px; }
+  .bar { display:flex; align-items:center; gap:10px; margin:6px 0; }
+  .bar .name { width:150px; font-size:13px; text-align:right; color:var(--ink); }
+  .bar .track { flex:1; background:var(--bg); border-radius:5px; height:16px; overflow:hidden; }
+  .bar .fill { height:100%; background:var(--accent); opacity:.85; }
+  .bar .v { width:38px; font-size:12px; color:var(--muted); }
+  .bar.clickable { cursor:pointer; border-radius:6px; padding:2px 4px; margin:2px -4px; }
+  .bar.clickable:hover { background:var(--bg); }
+  .bar.clickable:hover .fill { opacity:1; }
+  .bar.sel .fill { background:var(--gold); opacity:1; }
+  .bar.sel .name { font-weight:700; }
+  .thread { border-top:1px solid var(--line); padding:12px 0; }
+  .thread:first-child { border-top:none; }
+  .thread .t { font-weight:500; }
+  .pill { display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px;
+    background:var(--bg); border:1px solid var(--line); color:var(--muted); margin-right:6px; }
+  .fit { font-weight:600; color:var(--accent); }
+  .toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:18px; }
+  button { font:inherit; cursor:pointer; border:1px solid var(--line);
+    background:var(--card); border-radius:8px; padding:7px 14px; color:var(--ink); }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button:disabled { opacity:.5; cursor:default; }
+  select { font:inherit; padding:6px 10px; border-radius:8px; border:1px solid var(--line);
+    background:var(--card); }
+  .rcard { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; margin-bottom:14px; }
+  .rcard.posted { opacity:.55; }
+  .rcard.skip { opacity:.4; }
+  .rhead { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+  .rhead .t { font-weight:600; font-size:15px; }
+  textarea { width:100%; margin-top:10px; border:1px solid var(--line); border-radius:8px;
+    padding:10px; font:inherit; resize:vertical; min-height:64px; background:var(--surface2); }
+  .draft-row { display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+  .revise-row { display:flex; gap:6px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+  .revise-row input { flex:1; min-width:170px; padding:5px 9px; border-radius:8px;
+    border:1px solid var(--line); background:var(--surface2); color:var(--ink); font:inherit; font-size:13px; }
+  .mini-sel { font-size:12px; padding:4px 8px; }
+  .reply-tgt { min-height:44px; margin-top:8px; }
+  .blabel { margin-top:14px; font-size:12px; font-weight:600; letter-spacing:.02em;
+    color:var(--ink-soft); display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; }
+  .blabel .bhint { font-weight:400; color:var(--muted); letter-spacing:0; }
+  .rbox { margin-top:4px; }
+  .rbox.angle { background:var(--surface); border-color:var(--good); min-height:56px; }
+  .rbox.out { min-height:96px; }
+  .rbox.out:placeholder-shown { opacity:.75; }
+  .status-btns { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+  .sbtn { font-size:12px; padding:4px 10px; }
+  .sbtn.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .empty { color:var(--muted); padding:40px; text-align:center; }
+  .note { background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:10px;
+    padding:12px 16px; font-size:13px; color:var(--ink-soft); margin-bottom:18px; }
+  details summary { cursor:pointer; color:var(--muted); font-size:13px; }
+  .gap-list { columns:2; font-size:13px; color:var(--ink); margin-top:10px; }
+  .gap-list div { break-inside:avoid; padding:2px 0; }
+  table.mini { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+  table.mini th { text-align:right; color:var(--muted); font-weight:500; font-size:11px;
+    text-transform:uppercase; letter-spacing:.03em; padding:4px 8px; border-bottom:1px solid var(--line); }
+  table.mini th:first-child, table.mini td:first-child { text-align:left; }
+  table.mini td { padding:5px 8px; border-bottom:1px solid var(--line); }
+  table.mini tr:last-child td { border-bottom:none; }
+  @media(max-width:640px){ .gap-list{columns:1;} .bar .name{width:100px;} }
+
+  /* ===== marketing daily-driver views (blessed look) ===== */
+  .status-pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;
+    font-weight:600;color:var(--ok);background:var(--ok-bg);padding:7px 13px;border-radius:20px}
+  .status-pill.attn{color:var(--warn);background:var(--warn-bg)}
+  .status-pill .beat{width:8px;height:8px;border-radius:50%;background:currentColor;
+    box-shadow:0 0 0 0 currentColor;animation:beat 2.4s ease-out infinite}
+  @keyframes beat{0%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 55%,transparent)}
+    70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+  @media (prefers-reduced-motion:reduce){.status-pill .beat{animation:none}}
+  .hchip{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);background:var(--surface);
+    border:1px solid var(--line);padding:6px 11px;border-radius:20px;white-space:nowrap}
+  .hchip b{color:var(--ink);font-weight:650}
+
+  .mkview{font-size:15px}
+  .mkview .shead{display:flex;align-items:baseline;gap:12px;margin:2px 0 16px;flex-wrap:wrap}
+  .mkview .shead h2{font-family:var(--serif);font-weight:600;font-size:22px;letter-spacing:-.01em;margin:0}
+  .mkview .note2{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.02em}
+  .mkview .lbl{font:600 10.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+
+  .mkview .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:10px}
+  .mkview .subhead{grid-column:1/-1;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink-faint);margin:10px 0 -2px}
+  .mkview .hcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 15px;
+    box-shadow:var(--shadow);display:flex;flex-direction:column;gap:7px}
+  .mkview .hcard.pending{background:var(--surface2);border-style:dashed;border-color:var(--warn-line)}
+  .mkview .hcard .row1{display:flex;align-items:center;gap:9px}
+  .mkview .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .mkview .dot.ok{background:var(--ok)} .mkview .dot.warn{background:var(--warn)}
+  .mkview .dot.err{background:var(--err)} .mkview .dot.idle{background:var(--idle)}
+  .mkview .hcard .hname{font-weight:650;font-size:14px}
+  .mkview .hcard .st{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+    margin-left:auto;padding:3px 8px;border-radius:6px}
+  .mkview .st.ok{color:var(--ok);background:var(--ok-bg)} .mkview .st.warn{color:var(--warn);background:var(--warn-bg)}
+  .mkview .st.err{color:var(--err);background:var(--err-bg)} .mkview .st.idle{color:var(--idle);background:var(--idle-bg)}
+  .mkview .hcard .hdetail{font-size:13px;color:var(--ink-soft);line-height:1.4}
+  .mkview .hcard .hmeta{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint)}
+
+  .mkview .feed{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .mkview .ev{display:grid;grid-template-columns:74px auto 1fr;gap:12px;align-items:baseline;padding:11px 16px;border-top:1px solid var(--line-soft)}
+  .mkview .ev:first-child{border-top:none}
+  .mkview .ev .t{font-family:var(--mono);font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+  .mkview .ev .tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:2px 7px;border-radius:5px;white-space:nowrap;align-self:center}
+  .mkview .ev .msg{font-size:13.5px;color:var(--ink-soft)}
+  .mkview .ev .msg b{color:var(--ink);font-weight:600}
+  .mkview .tag.ok{color:var(--ok);background:var(--ok-bg)} .mkview .tag.warn{color:var(--warn);background:var(--warn-bg)}
+  .mkview .tag.err{color:var(--err);background:var(--err-bg)} .mkview .tag.info{color:var(--accent-ink);background:var(--ok-bg)}
+
+  .mkview .lane{display:inline-flex;align-items:center;gap:6px;font:600 11px/1 var(--mono);
+    letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:999px;
+    border:1px solid var(--line-soft);white-space:nowrap}
+  .mkview .lane .ld{width:8px;height:8px;border-radius:50%}
+  .mkview .lane.content{color:var(--accent-ink);background:var(--ok-bg)} .mkview .lane.content .ld{background:var(--accent)}
+  .mkview .lane.aeo{color:var(--warn-ink);background:var(--warn-bg)} .mkview .lane.aeo .ld{background:var(--warn)}
+  .mkview .lane.other{color:var(--ink-faint)} .mkview .lane.other .ld{background:var(--idle)}
+
+  .mkview .hero{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:14px;box-shadow:var(--shadow)}
+  .mkview .hero .count{font:600 13px/1 var(--mono);letter-spacing:.04em;color:var(--accent-ink);
+    background:var(--ok-bg);border:1px solid var(--accent-line);border-radius:999px;padding:7px 12px;white-space:nowrap}
+  .mkview .hero .body{flex:1;min-width:220px}
+  .mkview .hero .what{font:600 18px/1.25 var(--serif);margin:4px 0 2px}
+  .mkview .hero .when{font-size:13px;color:var(--ink-soft)}
+
+  .mkview .weekstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+  .mkview .day{background:var(--surface2);border:1px solid var(--line-soft);border-radius:10px;
+    padding:9px 8px 10px;min-height:74px;display:flex;flex-direction:column;gap:6px}
+  .mkview .day .dn{font:600 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+  .mkview .day .num{font:600 17px/1 var(--serif);color:var(--ink)}
+  .mkview .day .dlanes{display:flex;flex-direction:column;gap:4px;margin-top:auto}
+  .mkview .day .dpip{display:flex;align-items:center;gap:5px;font:600 10px/1.1 var(--mono);letter-spacing:.03em;text-transform:uppercase}
+  .mkview .day .dpip .ld{width:7px;height:7px;border-radius:50%;flex:none}
+  .mkview .day .dpip.content{color:var(--accent-ink)} .mkview .day .dpip.content .ld{background:var(--accent)}
+  .mkview .day .dpip.aeo{color:var(--warn-ink)} .mkview .day .dpip.aeo .ld{background:var(--warn)}
+  .mkview .day .rest{font:11px/1 var(--mono);color:var(--idle)}
+  .mkview .day.past{opacity:.5}
+  .mkview .day.today{background:var(--surface);border:1.5px solid var(--accent)}
+  .mkview .day.today .dn{color:var(--accent-ink)}
+  .mkview .sched-legend{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0}
+  .mkview .sched-legend span{font:11.5px/1.5 var(--mono);color:var(--ink-soft);display:inline-flex;gap:8px;align-items:center}
+  .mkview .daygroup{font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);padding:14px 0 6px}
+  .mkview .agenda .ev{grid-template-columns:104px auto 1fr}
+  .mkview .agenda .ev .t b{display:block;color:var(--accent-ink);font-weight:600}
+  .mkview .agenda .ev .msg .txt{font-size:13.5px;color:var(--ink)}
+  .mkview .agenda .ev .msg .amtea{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);margin-left:8px}
+
+  .mkview .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+  .mkview .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 16px;box-shadow:var(--shadow)}
+  .mkview .tile.hero-tile{grid-column:span 2;border-color:var(--accent);border-width:1.5px}
+  .mkview .tile .k{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-faint);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .mkview .tile .v{font-family:var(--serif);font-size:30px;font-weight:600;line-height:1;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .mkview .tile .d{font-family:var(--mono);font-size:11px;margin-top:6px}
+  .mkview .up{color:var(--ok)} .mkview .flat{color:var(--ink-faint)} .mkview .down{color:var(--err)}
+  .mkview .tile.dim{opacity:.62}
+  .mkview .tile .sub2{font-size:11.5px;color:var(--ink-soft);margin-top:5px}
+  .mkview .zerobar{height:6px;border-radius:3px;background:var(--line-soft);overflow:hidden;margin:10px 0 8px}
+  .mkview .zerobar i{display:block;height:100%;width:2px;background:var(--accent)}
+  .mkview .livedot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+  .mkview .tile.pending{background:var(--surface2);border:1.5px dashed var(--warn-line)}
+  .mkview .tile.pending .k{color:var(--idle)}
+  .mkview .tile.pending .v{color:var(--idle);font:600 15px/1 var(--mono);text-transform:uppercase;letter-spacing:.05em;margin:11px 0 5px}
+  .mkview .tile.pending .connect{font-size:12.5px;color:var(--ink-soft)}
+
+  .mkview .meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+  .mkview .meter{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 17px;box-shadow:var(--shadow)}
+  .mkview .meter.pending{background:var(--surface2);border-style:dashed;border-color:var(--warn-line)}
+  .mkview .meter .mtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:9px}
+  .mkview .meter .mname{font-weight:650;font-size:14px}
+  .mkview .meter .mval{font-family:var(--mono);font-size:14px;font-weight:650}
+  .mkview .meter .mof{color:var(--ink-faint);font-weight:400;font-size:11.5px}
+  .mkview .mbar{height:9px;background:var(--line);border-radius:6px;overflow:hidden}
+  .mkview .mbar>span{display:block;height:100%;background:var(--ok);border-radius:6px}
+  .mkview .mbar.warn>span{background:var(--warn)} .mkview .mbar.err>span{background:var(--err)}
+  .mkview .meter .mfoot{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  .mkview .meter .mfoot .i{color:var(--idle);font-weight:600}
+  .mkview .guard-note{margin-top:14px;background:var(--warn-bg);border:1px solid var(--line);border-radius:10px;padding:11px 15px;font-size:13px;color:var(--ink-soft)}
+  .mkview .guard-note b{color:var(--ink)}
+
+  .mkview .cadence{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .mkview .cadence .clbl{font-weight:650;font-size:14px}
+  .mkview .pips{display:flex;gap:5px}
+  .mkview .pip-c{width:22px;height:8px;border-radius:4px;background:var(--line)}
+  .mkview .pip-c.done{background:var(--ok)}
+  .mkview .cadence .info{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)}
+  .mkview .cadence .info b{color:var(--ink)}
+
+  .mkview .rcard2{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px;margin-bottom:12px}
+  .mkview .rcard2.stale{border-color:var(--warn-line)}
+  .mkview .stalebar{display:flex;align-items:center;gap:8px;justify-content:space-between;
+    background:var(--warn-bg);border-radius:8px;padding:7px 10px;margin:-2px -4px 12px;flex-wrap:wrap}
+  .mkview .stalebar .m{font:600 11px/1.2 var(--mono);color:var(--warn-ink);text-transform:uppercase;letter-spacing:.04em}
+  .mkview .rcard2 .rtop{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .mkview .rcard2 .rsub{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent-ink)}
+  .mkview .rcard2 .rfit{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);margin-left:auto}
+  .mkview .rcard2 .rtitle{font-weight:650;font-size:15px;margin:0 0 3px}
+  .mkview .rcard2 .rwhy{font-size:12.5px;color:var(--ink-faint);margin:0 0 12px;font-style:italic}
+
+  .mkview .pr{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:var(--surface);
+    border:1px solid var(--line);border-radius:11px;padding:12px 15px;box-shadow:var(--shadow);margin-bottom:9px}
+  .mkview .pr .prname{font-weight:650;font-size:14px}
+  .mkview .pr .prd{font-size:12.5px;color:var(--ink-soft)}
+  .mkview .flag{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--warn);background:var(--warn-bg);padding:3px 8px;border-radius:6px;display:inline-block}
+  .mkview .empty-rest{text-align:center;padding:30px 18px;color:var(--ink-soft);background:var(--surface);border:1px dashed var(--line);border-radius:14px}
+  .mkview .empty-rest .eico{font-size:24px;margin-bottom:8px}
+  .mkview .empty-rest .ebig{font:600 16px/1.3 var(--serif);color:var(--ink);margin-bottom:5px}
+  .mkview .lbtn{font-family:var(--sans);font-size:12.5px;font-weight:600;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);padding:8px 13px;border-radius:9px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .mkview .lbtn.primary{background:var(--accent);color:#fff;border-color:transparent}
+  .mkview .lbtn.warn{border-color:var(--warn-line);color:var(--warn-ink);background:var(--warn-bg)}
+  @media(max-width:640px){
+    .mkview .weekstrip{grid-template-columns:repeat(4,1fr)}
+    .mkview .tile.hero-tile{grid-column:span 1}
+    .mkview .ev,.mkview .agenda .ev{grid-template-columns:64px 1fr}
+    .mkview .ev .tag,.mkview .agenda .ev .lane{grid-column:2;justify-self:start}
+    .mkview .pr{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Clarence · Marketing cockpit</h1>
+  <span id="hStatus" class="status-pill"><span class="beat"></span> Loading</span>
+  <span id="hDate" class="hchip"></span>
+  <span id="hNext" class="hchip"></span>
+</header>
+<div class="navbar">
+  <div class="navrow">
+    <div class="tab active" data-tab="first10" onclick="showTab('first10'); loadFirst10(); closeMore()">First 10 users</div>
+    <div class="tab" data-tab="mk-ops" onclick="showTab('mk-ops'); loadOps(); closeMore()">Ops health</div>
+    <div class="tab" data-tab="mk-cost" onclick="showTab('mk-cost'); loadCost(); closeMore()">Cost &amp; limits</div>
+    <div class="tab" data-tab="mk-happened" onclick="showTab('mk-happened'); loadHappened(); closeMore()">What happened</div>
+    <div class="tab" data-tab="mk-schedule" onclick="showTab('mk-schedule'); loadSchedule(); closeMore()">Schedule &amp; timeline</div>
+    <div class="tab" data-tab="mk-queue" onclick="showTab('mk-queue'); loadQueue(); closeMore()">My queue</div>
+    <div class="tab" data-tab="mk-signals" onclick="showTab('mk-signals'); loadSignals(); closeMore()">What's working</div>
+    <div class="tab morebtn" id="moreBtn" onclick="toggleMore()" style="margin-left:auto">More tools ▾</div>
+  </div>
+  <div class="navrow secondary" id="moreRow" style="display:none">
+    <span class="tab small" style="pointer-events:none;color:var(--ink-faint)">deep dives:</span>
+    <div class="tab small" data-tab="overview" onclick="showTab('overview'); loadOverview()">Is it working</div>
+    <div class="tab small" data-tab="aeo" onclick="showTab('aeo'); loadAEO()">AEO gap &amp; winners</div>
+    <div class="tab small" data-tab="traffic" onclick="showTab('traffic'); loadTraffic()">Traffic detail</div>
+    <div class="tab small" data-tab="reddit" onclick="showTab('reddit'); loadReddit()">Reddit workspace</div>
+    <div class="tab small" data-tab="content" onclick="showTab('content'); loadContent()">Plan the week</div>
+    <div class="tab small" data-tab="ideas" onclick="showTab('ideas'); loadIdeas()">Idea backlog</div>
+    <div class="tab small" data-tab="sources" onclick="showTab('sources'); loadSources()">Sources</div>
+    <div class="tab small" data-tab="icp" onclick="showTab('icp'); loadCorpus()">ICP signals</div>
+    <div class="tab small" data-tab="voices" onclick="showTab('voices'); loadVoices()">Voices</div>
+  </div>
+</div>
+<main>
+  <!-- new daily-driver views -->
+  <section id="first10" class="view mkview active"><div class="empty">Loading the First 10…</div></section>
+  <section id="mk-ops" class="view mkview"><div class="empty">Loading ops health…</div></section>
+  <section id="mk-cost" class="view mkview"><div class="empty">Loading cost…</div></section>
+  <section id="mk-happened" class="view mkview"><div class="empty">Loading activity…</div></section>
+  <section id="mk-schedule" class="view mkview"><div class="empty">Loading schedule…</div></section>
+  <section id="mk-queue" class="view mkview"><div class="empty">Loading queue…</div></section>
+  <section id="mk-signals" class="view mkview"><div class="empty">Loading signals…</div></section>
+  <!-- existing deep-dive views (kept intact) -->
+  <section id="overview" class="view"><div class="empty">Loading…</div></section>
+  <section id="reddit" class="view"><div class="empty">Loading Reddit queue…</div></section>
+  <section id="content" class="view"><div class="empty">Loading…</div></section>
+  <section id="ideas" class="view"><div class="empty">Loading the idea backlog…</div></section>
+  <section id="aeo" class="view"><div class="empty">Loading AEO…</div></section>
+  <section id="traffic" class="view"><div class="empty">Loading traffic…</div></section>
+  <section id="sources" class="view"><div class="empty">Loading sources…</div></section>
+  <section id="voices" class="view"><div class="empty">Loading voices…</div></section>
+  <section id="icp" class="view"><div class="empty">Analyze a Reddit thread to start building the corpus…</div></section>
+</main>
+
+<script>
+// Every panel here fetches on load, and a bare fetch against a machine that has
+// gone to sleep never resolves: a spinner forever, and no reason given. Wrap
+// fetch once, here, rather than at twenty-two call sites.
+const REAL_FETCH = window.fetch.bind(window);
+const SLOW_MS = 8000, DEAD_MS = 25000;
+let _slowTimer = null;
+function boardStatus(state, detail){
+  let el = document.getElementById('board-status');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'board-status';
+    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:10px;'
+      + 'z-index:999;padding:9px 15px;border-radius:10px;font:13px/1.4 var(--sans);'
+      + 'box-shadow:var(--shadow);max-width:min(92vw,640px);text-align:center';
+    document.body.appendChild(el);
+  }
+  if(state === 'ok'){ el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  if(state === 'slow'){
+    el.style.background = 'var(--warn-bg)';
+    el.style.border = '1px solid var(--warn-line)';
+    el.style.color = 'var(--warn-ink)';
+    el.textContent = 'Still waiting on the board. It slows down while the hourly collector is running.';
+  } else {
+    el.style.background = 'var(--err-bg)';
+    el.style.border = '1px solid var(--err)';
+    el.style.color = 'var(--err)';
+    el.innerHTML = 'Cannot reach the board. The Mac it runs on is most likely asleep: '
+      + 'open its lid and check it is plugged in.'
+      + (detail ? '<br><span style="opacity:.75">' + detail + '</span>' : '');
+  }
+}
+window.fetch = function(url, opts){
+  const ctl = new AbortController();
+  const killer = setTimeout(() => ctl.abort(), DEAD_MS);
+  if(_slowTimer === null) _slowTimer = setTimeout(() => boardStatus('slow'), SLOW_MS);
+  const done = () => {
+    clearTimeout(killer);
+    if(_slowTimer !== null){ clearTimeout(_slowTimer); _slowTimer = null; }
+  };
+  return REAL_FETCH(url, Object.assign({}, opts || {}, {signal: ctl.signal}))
+    .then(r => { done(); boardStatus('ok'); return r; })
+    .catch(e => {
+      done();
+      boardStatus('dead', e && e.name === 'AbortError'
+        ? 'gave up after ' + (DEAD_MS / 1000) + ' seconds' : String((e && e.message) || e));
+      throw e;
+    });
+};
+window.addEventListener('unhandledrejection', e => {
+  const m = String((e.reason && e.reason.message) || e.reason || '');
+  if(/abort|fetch|network|load failed/i.test(m)) boardStatus('dead', m.slice(0, 120));
+});
+
+const esc = s => (s||"").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const laneTag = (lane,label) => `<span class="lane ${lane}"><span class="ld"></span>${esc(label||lane)}</span>`;
+const laneName = lane => lane==='aeo' ? 'AEO' : lane==='content' ? 'Content' : lane;
+
+// ===== daily-driver views: header, ops, cost, activity, schedule, queue, signals =====
+async function loadHeader(){
+  try{
+    const [h,s] = await Promise.all([
+      fetch('/api/health').then(r=>r.json()),
+      fetch('/api/schedule').then(r=>r.json())]);
+    const pill=document.getElementById('hStatus');
+    const attn=(h.overall||'').toLowerCase().includes('attention');
+    pill.className='status-pill'+(attn?' attn':'');
+    pill.innerHTML=`<span class="beat"></span> ${esc(h.overall||'Operational')}`;
+    document.getElementById('hDate').textContent=s.today||'';
+    const n=s.next;
+    document.getElementById('hNext').innerHTML = n
+      ? `next run <b>${esc(laneName(n.lane))}, ${esc(n.rel)} ${esc(n.time)}</b>` : '';
+  }catch(e){}
+}
+
+const STLAB={ok:'ok',warn:'attention',err:'error',idle:'idle'};
+async function loadOps(){
+  const el=document.getElementById('mk-ops');
+  const d=await (await fetch('/api/health')).json();
+  const card=c=>{
+    const lab=c.not_built?'not built':(c.label||STLAB[c.status]||c.status);
+    return `<div class="hcard${c.not_built?' pending':''}">
+      <div class="row1"><span class="dot ${c.status}"></span><span class="hname">${esc(c.name)}</span>
+        <span class="st ${c.status}">${esc(lab)}</span></div>
+      <div class="hdetail">${esc(c.detail)}</div>
+      ${c.meta?`<div class="hmeta">${esc(c.meta)}</div>`:''}</div>`;
+  };
+  let html=`<div class="shead"><h2>Ops health</h2><span class="note2">green ok · amber attention · red error · grey idle or not connected</span></div><div class="grid">`;
+  for(const [group,cards] of Object.entries(d.groups||{})){
+    html+=`<div class="subhead">${esc(group)}</div>`+(cards||[]).map(card).join('');
+  }
+  el.innerHTML=html+'</div>';
+}
+
+async function loadCost(){
+  const el=document.getElementById('mk-cost');
+  const d=await (await fetch('/api/cost')).json();
+  const est=d.aeo_estimate, meta=d.meta||{}, r=d.reddit;
+  const nc=(d.not_connected||[]).map(x=>`<div class="meter pending">
+    <div class="mtop"><span class="mname">${esc(x.name)}</span><span class="mval" style="color:var(--idle)">not connected</span></div>
+    <div class="mbar"><span style="width:0%"></span></div>
+    <div class="mfoot"><span class="i">not wired</span><span>${esc(x.why)}</span></div></div>`).join('');
+  el.innerHTML=`<div class="shead"><h2>Cost &amp; limits</h2><span class="note2">real where connected, marked where not · you set every cap</span></div>
+    <div class="meters">
+      <div class="meter"><div class="mtop"><span class="mname">AEO probes (estimated)</span>
+        <span class="mval">${est==null?'n/a':'$'+est.toFixed(2)} <span class="mof">cumulative, ${d.aeo_runs} runs</span></span></div>
+        <div class="mbar"><span style="width:32%"></span></div>
+        <div class="mfoot"><span class="i">estimate, not a bill</span><span>from answer length + list pricing</span></div></div>
+      <div class="meter"><div class="mtop"><span class="mname">Meta ad spend</span>
+        <span class="mval">$0 <span class="mof">not running</span></span></div>
+        <div class="mbar"><span style="width:0%"></span></div>
+        <div class="mfoot"><span class="i">off</span><span>$${meta.day_cap}/day floor, $${meta.month_cap} month cap, you authorize</span></div></div>
+      ${r&&!r.error?`<div class="meter"><div class="mtop"><span class="mname">Reddit loop (measured)</span>
+        <span class="mval">$${(r.projected_month_usd||0).toFixed(2)} <span class="mof">/month at this rate</span></span></div>
+        <div class="mbar"><span style="width:${Math.min(100,(r.projected_month_usd||0)/60*100)}%"></span></div>
+        <div class="mfoot"><span class="i">real token counts</span><span>$${(r.total_usd||0).toFixed(3)} so far over ${r.hours_running}h · $${(r.per_hour_usd||0).toFixed(4)}/hour · ${r.total_posts} posts judged</span></div></div>`:''}
+      ${nc}
+    </div>
+    ${r&&!r.error?`<div class="guard-note" style="margin-bottom:10px"><b>The hourly loop is the line that compounds.</b>
+      Today: $${(r.today.usd||0).toFixed(3)} across ${r.today.calls} call(s), ${r.today.posts} posts judged.
+      Last 7 days: $${(r.week.usd||0).toFixed(2)}.
+      ${(r.by_model||[]).map(m=>`${esc(m.model)}: ${m.calls} call(s)`).join(' · ')}
+      <br>A run only pays for posts it has never seen, so this falls as the store fills and rises when you add subreddits.</div>`:''}
+    ${d.aeo_recent&&d.aeo_recent.length?`<div class="guard-note" style="margin-bottom:10px"><b>AEO is the big single charge.</b>
+      Runs ${esc(d.aeo_schedule||'')}: ${d.aeo_recent.map(x=>`${esc(x.run)} $${(x.cost||0).toFixed(2)}`).join(' · ')}.
+      That cadence is set by the cron in .github/workflows/aeo-weekly.yml.</div>`:''}
+    <div class="guard-note"><b>Caps are not configured yet.</b> ${esc(d.note||'')}</div>`;
+}
+
+async function loadHappened(){
+  const el=document.getElementById('mk-happened');
+  const d=await (await fetch('/api/activity')).json();
+  const evs=d.events||[];
+  const rows=evs.map(e=>`<div class="ev"><span class="t">${esc(e.when)}</span>
+    <span class="tag ${e.tag}">${esc(e.kind)}</span><span class="msg">${esc(e.text)}</span></div>`).join('');
+  el.innerHTML=`<div class="shead"><h2>What happened</h2><span class="note2">recent activity, newest first · workflow runs, PRs, sweeps</span></div>
+    ${evs.length?`<div class="feed">${rows}</div>`
+      :'<div class="empty-rest"><div class="eico">🗓</div><div class="ebig">Quiet so far</div><div>No recent runs or pull requests to show.</div></div>'}
+    ${d.gh_connected?'':'<p class="lbl" style="margin:12px 2px">GitHub CLI not reachable, so workflow runs and PRs are missing from this feed. Run gh auth login.</p>'}`;
+}
+
+async function loadSchedule(){
+  const el=document.getElementById('mk-schedule');
+  const d=await (await fetch('/api/schedule')).json();
+  const n=d.next;
+  const hero=n?`<div class="hero"><span class="count">${esc(n.rel)}</span>
+    <div class="body"><div class="lbl">Next up</div><div class="what">${esc(n.label)}</div>
+    <div class="when">${esc(n.weekday)} ${esc(n.day_label)}, ${esc(n.time)}. ${esc(n.does||'')}</div></div>
+    ${laneTag(n.lane,laneName(n.lane))}</div>`:'';
+  const days=(d.week||[]).map(w=>{
+    const cls='day'+(w.today?' today':'')+(w.past?' past':'');
+    const lanes=(w.lanes||[]).length
+      ? w.lanes.map(l=>`<span class="dpip ${l.lane}"><span class="ld"></span>${esc(laneName(l.lane))}</span>`).join('')
+      : `<span class="rest">${w.today?'nothing today':'rest'}</span>`;
+    const dn=w.today?w.dn+' · today':w.dn;
+    return `<div class="${cls}"><span class="dn">${esc(dn)}</span><span class="num">${esc(w.num)}</span><div class="dlanes">${lanes}</div></div>`;
+  }).join('');
+  const groups={};
+  (d.next_runs||[]).forEach(r=>{ (groups[r.group]=groups[r.group]||[]).push(r); });
+  const order=['Today','Tomorrow','This week','Next 2 weeks'];
+  const agenda=order.filter(g=>groups[g]).map(g=>`<div class="daygroup">${esc(g)}</div><div class="feed">${
+    groups[g].map(r=>`<div class="ev"><span class="t"><b>${esc(r.rel)}</b>${esc(r.weekday)} ${esc(r.time)}</span>
+      ${laneTag(r.lane,laneName(r.lane))}
+      <span class="msg"><span class="txt">${esc(r.does)}</span><span class="amtea">${esc(r.day_label)}</span></span></div>`).join('')
+  }</div>`).join('');
+  const legend=(d.workflows||[]).map(w=>`<span>${laneTag(w.lane,laneName(w.lane))} ${esc(w.human)}</span>`).join('');
+  el.innerHTML=`<div class="shead"><h2>Schedule &amp; timeline</h2><span class="note2">cron-anchored on GitHub Actions (from ${esc(d.ref||'main')}, UTC), shown in your local time</span></div>
+    ${hero}
+    <p class="lbl" style="margin:16px 0 8px">This week</p>
+    <div class="weekstrip">${days}</div>
+    <div class="sched-legend">${legend}</div>
+    <p class="lbl" style="margin:18px 0 4px">Next runs</p>
+    <div class="agenda">${agenda||'<div class="empty-rest"><div class="ebig">No upcoming runs scheduled</div></div>'}</div>`;
+}
+
+async function loadSignals(){
+  const el=document.getElementById('mk-signals');
+  const d=await (await fetch('/api/signals')).json();
+  const s=d.surfacing||{}, wl=d.waitlist||{}, t=d.traffic_last;
+  const hero=s.connected
+    ? `<div class="tile hero-tile"><div class="k">Non-branded surfacing ${laneTag('aeo','AEO')}</div>
+        <div class="v">${s.nb_hit} <span style="font:400 18px/1 var(--serif);color:var(--ink-faint)">/ ${s.nb_total}</span></div>
+        <div class="zerobar"><i style="width:${s.nb_total?Math.max(2,Math.round(100*s.nb_hit/s.nb_total)):2}%"></i></div>
+        <div class="sub2">${s.nb_hit===0
+          ? `Across ${s.n_full_runs} full runs, no question that does not name Clarence has surfaced us yet. This is the number that matters. The day it turns to 1, the content is landing.`
+          : `We surfaced on ${s.nb_hit} question(s) that never named us. That is real organic discovery.`}</div></div>`
+    : `<div class="tile hero-tile pending"><div class="k">Non-branded surfacing</div><div class="v">Not connected</div><div class="connect">Run an AEO sweep to light this up.</div></div>`;
+  const branded=s.connected?`<div class="tile dim"><div class="k">Branded (expected)</div>
+    <div class="v">${s.br_hit} / ${s.br_total}</div><div class="d flat">tracked, not a win</div>
+    <div class="sub2">The models just scraped our site. Low information.</div></div>`:'';
+  const waitlist=wl.connected
+    ? `<div class="tile"><div class="k"><span class="livedot"></span>Waitlist · this week</div>
+        <div class="v">${wl.this_week}</div>
+        <div class="sub2">Connected and live (D1). ${wl.this_week===0?'A true zero, not a gap in data.':''} ${wl.total} total.</div></div>`
+    : `<div class="tile pending"><div class="k">Waitlist</div><div class="v">Not connected</div><div class="connect">${esc(wl.note||'D1 not reachable.')}</div></div>`;
+  const pages=`<div class="tile"><div class="k">Content pages live</div><div class="v">${(d.content||{}).n_live??0}</div>
+    <div class="d flat">published</div><div class="sub2">Pipeline drafts 1 per run, Tue &amp; Fri.</div></div>`;
+  const traffic=t?`<div class="tile"><div class="k">Traffic · last day</div><div class="v">${t.requests}</div>
+    <div class="d flat">requests, ${esc(t.date)}</div><div class="sub2">${t.page_views} page views, ${t.uniques} uniques.</div></div>`
+    :`<div class="tile pending"><div class="k">Traffic</div><div class="v">Not connected</div><div class="connect">No edge analytics yet.</div></div>`;
+  const gsc=`<div class="tile pending"><div class="k">Google organic (SEO)</div><div class="v">Not connected</div><div class="connect">Connect Search Console to light this up.</div></div>`;
+  const models=`<div class="tile pending"><div class="k">How models describe us</div><div class="v">Not connected</div><div class="connect">A characterization tally (are we called a CRM?) needs the answer-text scan wired in.</div></div>`;
+  const cost=`<div class="tile"><div class="k">Cost · cumulative</div><div class="v" style="font-size:22px">${d.cost_total==null?'n/a':'$'+d.cost_total.toFixed(2)}</div>
+    <div class="d flat">estimate · ads $0</div><div class="sub2">Modeled from answer length, not a bill.</div></div>`;
+  el.innerHTML=`<div class="shead"><h2>What's working</h2><span class="note2">the numbers behind the decisions · real data, honest zeros</span></div>
+    <div class="tiles">${hero}${branded}${waitlist}${pages}${traffic}${gsc}${models}${cost}</div>`;
+}
+
+async function loadQueue(){
+  const el=document.getElementById('mk-queue');
+  const [prs, rd]=await Promise.all([
+    fetch('/api/prs').then(r=>r.json()),
+    fetch('/api/reddit').then(r=>r.json()).catch(()=>({threads:[]}))]);
+  const content=(prs.prs||[]).filter(p=>p.content);
+  const others=(prs.prs||[]).filter(p=>!p.content);
+  const prCard=p=>`<div class="pr"><span class="dot ${p.needs_stat?'warn':'ok'}"></span>
+    <div><div class="prname">PR #${p.number} · ${esc(p.title)}</div>
+    <div class="prd">${p.needs_stat?'<span class="flag">held: needs stat check</span> ':''}${p.content?'content page':esc(p.branch||'')} · opened ${esc(p.created)}${p.content?` · preview with <code>${esc(prs.preview_cmd||'bash content/preview.sh')}</code>`:''}</div></div>
+    <a class="lbtn primary" href="${esc(p.url)}" target="_blank">Review ↗</a></div>`;
+
+  // reddit summary (full workspace lives under More)
+  // The same rule the workspace uses below: archived or locked, you cannot reply.
+  const threads=(rd.threads||[]).filter(t=>t.archived!==true && t.locked!==true);
+  const gen=rd.generated?rd.generated.slice(0,10):null;
+  const ageDays=rd.generated?Math.round((Date.now()-new Date(rd.generated))/86400000):null;
+  const stale=ageDays==null||ageDays>3;
+  const top=threads.slice(0,3).map(t=>`<div class="rcard2">
+    <div class="rtop"><span class="rsub">r/${esc(t.subreddit||'')}</span>
+      <span class="rfit">${t.fit!=null?'fit '+(t.fit*100).toFixed(0):''}${t.num_comments!=null?' · '+t.num_comments+' comments':''}</span></div>
+    <p class="rtitle"><a href="${esc(t.url)}" target="_blank" style="color:inherit">${esc(t.title)}</a></p>
+    ${t.why?`<p class="rwhy">${esc(t.why)}</p>`:''}
+    <a class="lbtn" href="${esc(t.url)}" target="_blank">Open thread ↗</a></div>`).join('');
+  const staleBar=stale?`<div class="stalebar">
+    <span class="m">⏸ ${gen?'Last refreshed '+gen+(ageDays!=null?' · '+ageDays+' days old':''):'Queue not built yet'}</span>
+    <span class="lbtn warn" style="cursor:pointer" onclick="showTab('reddit'); loadReddit()">Open workspace to refresh ↻</span></div>`:'';
+
+  el.innerHTML=`<div class="shead"><h2>My queue</h2><span class="note2">the work only you can do</span></div>
+    <div class="shead" style="margin-bottom:10px"><h2 style="font-size:17px">Content PRs to review</h2></div>
+    ${content.length?content.map(prCard).join('')
+      :`<div class="empty-rest"><div class="eico">📭</div><div class="ebig">Nothing to review right now</div>
+         <div>No open content pull requests. When the pipeline opens one, it appears here with a preview command. Next draft: see Schedule.</div></div>`}
+    ${others.length?`<div class="shead" style="margin:22px 0 10px"><h2 style="font-size:17px">Other open PRs <span class="note2">(${others.length})</span></h2></div>${others.map(prCard).join('')}`:''}
+    ${prs.connected?'':`<p class="lbl" style="margin:10px 2px">${esc(prs.note||'GitHub not reachable.')}</p>`}
+    <div class="shead" style="margin:26px 0 10px"><h2 style="font-size:17px">Reddit, in your own words <span class="note2">(draft in the workspace, post by hand)</span></h2></div>
+    ${staleBar}
+    ${top||'<div class="empty-rest"><div class="ebig">No threads queued</div><div>Open the Reddit workspace and refresh to pull threads.</div></div>'}
+    <div style="margin-top:6px"><span class="lbtn" style="cursor:pointer" onclick="showTab('reddit'); loadReddit()">Open full Reddit workspace →</span></div>`;
+}
+
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===name));
+}
+function toggleMore(){
+  const row=document.getElementById('moreRow'), btn=document.getElementById('moreBtn');
+  const open=row.style.display==='none';
+  row.style.display=open?'flex':'none';
+  btn.textContent=open?'More ▴':'More ▾';
+  btn.classList.toggle('active',open);
+}
+function closeMore(){
+  const row=document.getElementById('moreRow'), btn=document.getElementById('moreBtn');
+  if(row){ row.style.display='none'; btn.textContent='More ▾'; btn.classList.remove('active'); }
+}
+
+// ---- "Plan the week": one button turns AEO gaps + the Reddit queue into a
+//      batch of things to make (guides + reddit replies). Drafts on demand only.
+function loadContent(){
+  const el=document.getElementById('content');
+  el.innerHTML=`
+    <div class="sub">Turn this week's answer-engine gaps and your live Reddit queue into things to make. Nothing is written or posted here: you review, then draft the ones worth doing. Guide drafts open a PR for you to merge; Reddit drafts write a reply in your voice for you to post yourself.</div>
+    <div style="margin:14px 0"><button class="primary" id="planBtn" onclick="genPlan()">Generate this week's plan</button></div>
+    <div id="planOut"></div>`;
+}
+
+async function genPlan(){
+  const btn=document.getElementById('planBtn'), out=document.getElementById('planOut');
+  btn.disabled=true; btn.textContent='Building the plan…';
+  let d; try{ d=await (await fetch('/api/content/plan')).json(); }
+  catch(e){ btn.disabled=false; btn.textContent="Generate this week's plan"; out.innerHTML='<div class="empty">could not load plan</div>'; return; }
+  btn.disabled=false; btn.textContent='Regenerate plan';
+  if(d.error){ out.innerHTML=`<div class="empty">${esc(d.error)}</div>`; return; }
+  const guide=(d.blog||[]).map(b=>`
+    <div class="thread">
+      <div><b>${esc(b.question)}</b></div>
+      ${b.winning_url?`<div class="sub" style="font-size:12px">Out-answer <a href="${esc(b.winning_url)}" target="_blank">${esc(b.winning_domain)}: ${esc(b.winning_title||b.winning_url)}</a> (wins ${b.winning_n} of our questions)</div>`:'<div class="sub" style="font-size:12px">No mapped competitor page; still a gap worth owning.</div>'}
+      <div style="margin-top:6px"><button class="sbtn" onclick="draftGuide('${encodeURIComponent(b.question)}', this)">✍️ Draft guide + open PR</button> <span class="gres"></span></div>
+    </div>`).join('');
+  const red=(d.reddit||[]).map(r=>`
+    <div class="thread">
+      <div><b><a href="${esc(r.url)}" target="_blank">${esc(r.title)}</a></b> <span class="pill">r/${esc(r.subreddit)}</span> <span class="sub" style="font-size:11px">fit ${r.fit} · ${esc(r.cluster)}</span></div>
+      <div style="margin-top:6px"><button class="sbtn" onclick="draftRedditPlan('${esc(r.url)}', this)">✍️ Draft reply</button> <span class="rres"></span></div>
+    </div>`).join('');
+  out.innerHTML=`
+    <h2>Guides to publish <span class="sub">(out-answer the winning page; opens a PR)</span></h2>
+    <div class="card">${guide||'<div class="sub">No new gap questions to draft. Nice, the top gaps already have pages.</div>'}</div>
+    <h2>Reddit threads to engage <span class="sub">(live + commentable; draft in your voice, post yourself)</span></h2>
+    <div class="card">${red||'<div class="sub">No live threads queued. Hit “Refresh live threads” in Do the work.</div>'}</div>`;
+}
+
+async function draftGuide(qEnc, btn){
+  const res=btn.parentElement.querySelector('.gres');
+  btn.disabled=true; btn.textContent='Drafting + opening PR… (~1 min)'; res.textContent='';
+  try{
+    const d=await (await fetch('/api/content/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:decodeURIComponent(qEnc)})})).json();
+    res.innerHTML = d.ok ? ' <span style="color:#4a7c59">PR opened ✓. Review + merge on GitHub</span>'
+                         : ` <span style="color:#a55">${esc((d.error||d.output||'failed').slice(0,180))}</span>`;
+  }catch(e){ res.textContent=' error'; }
+  btn.disabled=false; btn.textContent='✍️ Draft guide + open PR';
+}
+
+async function draftRedditPlan(url, btn){
+  const res=btn.parentElement.querySelector('.rres');
+  btn.disabled=true; btn.textContent='Drafting…';
+  try{
+    const d=await (await fetch('/api/reddit/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url, author:'curious-newcomer', context:'new_comment'})})).json();
+    res.innerHTML = (d.ok && d.draft) ? `<div class="sub" style="margin-top:8px;white-space:pre-wrap;background:var(--bg);padding:10px;border-radius:8px;color:var(--ink)">${esc(d.draft)}</div>`
+                                      : ` <span style="color:#a55">${esc((d.error||'no draft').slice(0,160))}</span>`;
+  }catch(e){ res.textContent=' error'; }
+  btn.disabled=false; btn.textContent='✍️ Draft reply';
+}
+
+// ---- "Idea backlog": the persistent content pipeline. Seed from gaps + live
+//      signals, add your own, then draft the ones worth doing. Guide drafts open
+//      a ready-to-publish PR; blog drafts open a scaffold PR to rewrite in your
+//      voice. Nothing publishes without your merge. Status: idea -> published.
+const IDEA_STATUSES=['idea','drafting','in-pr','published'];
+const STATUS_LABEL={'idea':'Ideas','drafting':'Drafting','in-pr':'In PR','published':'Published'};
+
+async function loadIdeas(){
+  const el=document.getElementById('ideas');
+  el.innerHTML='<div class="empty">Loading the idea backlog…</div>';
+  let d; try{ d=await (await fetch('/api/ideas')).json(); }
+  catch(e){ el.innerHTML='<div class="empty">could not load backlog</div>'; return; }
+  if(d.error){ el.innerHTML=`<div class="empty">${esc(d.error)}</div>`; return; }
+  renderIdeas(el, d.ideas||[]);
+}
+
+function ideaCard(i){
+  const src=(i.source&&i.source!=='manual')?`<span class="sub" style="font-size:11px">· ${esc(i.source)}</span>`:'';
+  let actions='';
+  if(i.status==='idea'||i.status==='drafting'){
+    actions=`<button class="sbtn" onclick="draftIdea('${esc(i.id)}',this)">✍️ Draft + open PR</button>`;
+  } else if(i.status==='in-pr'){
+    actions=(i.pr_url?`<a class="sbtn" href="${esc(i.pr_url)}" target="_blank">View PR ↗</a> `:'')
+      +`<button class="sbtn" onclick="setIdeaStatus('${esc(i.id)}','published')">Mark published</button>`;
+  }
+  const angle=i.angle?`<div class="sub" style="font-size:12px;margin-top:3px">${esc(i.angle)}</div>`:'';
+  return `<div class="thread" data-id="${esc(i.id)}">
+    <div><span class="pill">${esc(i.kind)}</span> <b>${esc(i.title)}</b> ${src}</div>
+    ${angle}
+    <div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      ${actions}
+      <select class="sbtn" onchange="setIdeaStatus('${esc(i.id)}',this.value)">
+        ${IDEA_STATUSES.map(s=>`<option value="${s}"${s===i.status?' selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+      </select>
+      <button class="sbtn" onclick="deleteIdea('${esc(i.id)}')" title="remove">🗑</button>
+      <span class="ires"></span>
+    </div>
+  </div>`;
+}
+
+function renderIdeas(el, ideas){
+  const cols=IDEA_STATUSES.map(s=>{
+    const items=ideas.filter(i=>i.status===s);
+    const cards=items.map(ideaCard).join('')||'<div class="sub" style="font-size:12px">nothing here yet</div>';
+    return `<div style="flex:1;min-width:230px">
+      <h2 style="font-size:14px">${STATUS_LABEL[s]} <span class="sub">(${items.length})</span></h2>
+      <div class="card" style="padding:8px">${cards}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`
+    <div class="sub">Your standing content pipeline. Seed it from answer-engine gaps and live signals, add your own, then draft the ones worth doing. Guides land ready to publish on merge; blog drafts land as scaffolds to rewrite in your voice. Nothing publishes without your merge.</div>
+    <div style="margin:12px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="primary" id="seedBtn" onclick="seedIdeas()">Seed from gaps + signals</button>
+      <span id="seedRes" class="sub"></span>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <b>Add an idea</b>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <input id="ideaTitle" placeholder="Title / headline" style="flex:2;min-width:200px">
+        <select id="ideaKind" style="flex:0"><option value="guide">guide</option><option value="blog">blog</option><option value="answer">answer</option></select>
+        <input id="ideaAngle" placeholder="Angle (optional)" style="flex:2;min-width:160px">
+        <button class="sbtn" onclick="addIdea()">Add</button>
+      </div>
+      <span id="addRes" class="sub"></span>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">${cols}</div>`;
+}
+
+async function seedIdeas(){
+  const btn=document.getElementById('seedBtn'), res=document.getElementById('seedRes');
+  btn.disabled=true; btn.textContent='Seeding…';
+  try{
+    const d=await (await fetch('/api/ideas/seed',{method:'POST'})).json();
+    res.textContent=d.ok?`added ${d.added} (gaps ${d.by_source['aeo-gap']}, reddit ${d.by_source.reddit}, icp ${d.by_source.icp})`:(d.error||'failed');
+  }catch(e){ res.textContent='error'; }
+  btn.disabled=false; btn.textContent='Seed from gaps + signals';
+  loadIdeas();
+}
+
+async function addIdea(){
+  const title=document.getElementById('ideaTitle').value.trim();
+  const kind=document.getElementById('ideaKind').value;
+  const angle=document.getElementById('ideaAngle').value.trim();
+  const res=document.getElementById('addRes');
+  if(!title){ res.textContent='need a title'; return; }
+  const d=await (await fetch('/api/ideas/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,kind,angle})})).json();
+  if(d.ok) loadIdeas(); else res.textContent=esc(d.error||'not added');
+}
+
+async function setIdeaStatus(id,status){
+  await fetch('/api/ideas/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
+  loadIdeas();
+}
+
+async function deleteIdea(id){
+  await fetch('/api/ideas/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadIdeas();
+}
+
+async function draftIdea(id,btn){
+  const res=btn.parentElement.querySelector('.ires');
+  btn.disabled=true; btn.textContent='Drafting + opening PR… (~1 min)'; res.textContent='';
+  try{
+    const d=await (await fetch('/api/ideas/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})})).json();
+    if(d.ok){ res.innerHTML=' <span style="color:#4a7c59">PR opened ✓</span>'; setTimeout(loadIdeas,700); }
+    else res.innerHTML=` <span style="color:#a55">${esc((d.error||d.output||'failed').slice(0,180))}</span>`;
+  }catch(e){ res.textContent=' error'; }
+  btn.disabled=false; btn.textContent='✍️ Draft + open PR';
+}
+
+// ---- "Is it working": insights + AEO trend + traffic on one screen ----
+async function loadOverview(){
+  const el=document.getElementById('overview');
+  el.innerHTML=`
+    <div class="sub">Your weekly read: are the AI engines finding us, and is traffic moving. The gap list, winners drill-down and full country breakdown live under <b>more</b>.</div>
+    <div id="ovInsights" style="margin-top:14px"></div>
+    <div id="ovMentions"></div>
+    <div id="ovTrend"></div>
+    <h2>Traffic</h2>
+    <div id="ovTraffic"><div class="sub">Loading traffic…</div></div>
+    <div id="ovRuns"></div>`;
+  loadInsights('ovInsights');
+  loadMentions('ovMentions');
+  loadTrend('ovTrend');
+  loadOverviewTraffic();
+  loadRuns('ovRuns');
+}
+
+async function loadMentions(boxId){
+  const box=document.getElementById(boxId); if(!box) return;
+  const d=await (await fetch('/api/aeo')).json();
+  if(d.error){ box.innerHTML=''; return; }
+  const m=d.mentions_detail||[], c=d.cites_detail||[];
+  if(!m.length && !c.length){ box.innerHTML=''; return; }
+  const row=(x,showUrl)=>`<div class="thread">
+    <div><b>${esc(x.query)}</b> <span class="pill">${esc(x.provider)}</span>
+      ${x.raw?`<a onclick="showRaw('${encodeURIComponent(x.raw)}','${esc(x.query).replace(/'/g,"&#39;")}')" style="cursor:pointer;font-size:12px">view answer ↗</a>`:''}</div>
+    ${showUrl&&x.url?`<div class="sub" style="word-break:break-all;font-size:11px">${esc(x.url)}</div>`:''}
+  </div>`;
+  box.innerHTML=`
+    <h2>Where we showed up <span class="sub">(latest run: ${esc(d.run)}, the exact search + engine)</span></h2>
+    <div class="card">
+      <div class="sub" style="margin-bottom:6px"><b>Named in the answer text</b> (${m.length})</div>
+      ${m.length?m.map(x=>row(x,false)).join(''):'<div class="sub">none this run</div>'}
+      ${c.length?`<div class="sub" style="margin:16px 0 6px"><b>Linked to your site</b> (${c.length})</div>`+c.map(x=>row(x,true)).join(''):''}
+      <div class="sub" style="margin-top:12px">Run any of these searches yourself on that engine to see it live, or click "view answer" for the exact response.</div>
+    </div>`;
+}
+
+async function showRaw(rawEnc, query){
+  const raw=decodeURIComponent(rawEnc);
+  const d=await (await fetch('/api/raw?path='+encodeURIComponent(raw))).json();
+  let ov=document.getElementById('rawOverlay');
+  if(!ov){ ov=document.createElement('div'); ov.id='rawOverlay'; document.body.appendChild(ov); }
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;padding:40px;overflow:auto';
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  ov.innerHTML=`<div style="background:var(--card);max-width:760px;margin:auto;border-radius:12px;padding:20px 24px;border:1px solid var(--line)">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+      <h2 style="margin:0">${esc(query)}</h2>
+      <button onclick="document.getElementById('rawOverlay').remove()">close</button></div>
+    <div class="sub" style="margin:4px 0 12px;font-size:11px;word-break:break-all">${esc(raw)}</div>
+    <pre style="white-space:pre-wrap;font:13px/1.55 -apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);margin:0">${esc(d.text||d.error||'(empty)')}</pre>
+  </div>`;
+}
+
+async function loadRuns(boxId){
+  const box=document.getElementById(boxId); if(!box) return;
+  const d=await (await fetch('/api/runs')).json();
+  const runs=d.runs||[];
+  if(!runs.length){ box.innerHTML=''; return; }
+  const rows=runs.map(r=>`<tr>
+    <td>${esc(r.run)}</td>
+    <td>${(r.providers||[]).length}</td>
+    <td style="text-align:right">${r.questions}</td>
+    <td style="text-align:right">${r.answers}</td>
+    <td style="text-align:right">${r.mentions}</td>
+    <td style="text-align:right">${r.cites}</td>
+    <td style="text-align:right">${r.cost==null?'n/a':'$'+r.cost.toFixed(2)}</td>
+  </tr>`).join('');
+  box.innerHTML=`
+    <h2 style="margin-top:28px">Run log &amp; cost <span class="sub">${esc(d.schedule||'')}</span></h2>
+    <div class="card">
+      <table class="mini"><thead><tr>
+        <th>run</th><th>engines</th><th>questions</th><th>answers</th><th>mentions</th><th>cites</th><th>est. cost</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+      <div class="sub" style="margin-top:8px">Total spend to date: <b>$${(d.total||0).toFixed(2)}</b>. Cost is an estimate: output tokens are real, input tokens and web-search fees are assumed, Gemini grounding treated as free.</div>
+    </div>`;
+}
+
+async function loadOverviewTraffic(){
+  const box=document.getElementById('ovTraffic'); if(!box) return;
+  const d=await (await fetch('/api/traffic')).json();
+  if(d.error){ box.innerHTML=`<div class="note">${esc(d.error)}</div>`; return; }
+  const s=d.series||[];
+  if(!s.length){ box.innerHTML='<div class="empty">No traffic rows yet.</div>'; return; }
+  const last7=s.slice(-7), prev7=s.slice(-14,-7);
+  const sum=(a,k)=>a.reduce((n,r)=>n+r[k],0);
+  const uv7=sum(last7,'uniques'), uvp=sum(prev7,'uniques');
+  const wow=uvp?Math.round(100*(uv7-uvp)/uvp):null;
+  const pvPts=s.map(r=>({date:r.date,value:r.page_views,label:r.date.slice(8)}));
+  const uvPts=s.map(r=>({date:r.date,value:r.uniques,label:r.date.slice(8)}));
+  box.innerHTML=`
+    <div class="row">
+      <div class="stat"><div class="n">${uv7}</div><div class="l">uniques · last 7d</div></div>
+      <div class="stat"><div class="n">${wow==null?'n/a':(wow>=0?'+':'')+wow+'%'}</div><div class="l">uniques wk/wk</div></div>
+      <div class="stat"><div class="n">${sum(s,'page_views').toLocaleString()}</div><div class="l">pageviews (all)</div></div>
+    </div>
+    <div class="card">
+      <div class="sub" style="margin-bottom:6px">Daily unique visitors</div>
+      ${sparkBars(uvPts,'#4a7c59')}
+      <div class="sub" style="margin:14px 0 6px">Daily pageviews</div>
+      ${sparkBars(pvPts,'#3b6ea5')}
+    </div>
+    <div class="sub"><a onclick="showTab('traffic'); loadTraffic()" style="cursor:pointer">See country breakdown and full traffic detail →</a></div>`;
+}
+
+let _aeoD=null;
+async function loadAEO(){
+  const d = await (await fetch('/api/aeo')).json();
+  _aeoD=d;
+  const el = document.getElementById('aeo');
+  if(d.error){ el.innerHTML = `<div class="empty">${esc(d.error)}</div>`; return; }
+  const maxW = d.winners.length ? d.winners[0][1] : 1;
+  el.innerHTML = `
+    <div id="aeoInsights"></div>
+    <div id="aeoTrend"></div>
+    <div class="sub">Latest run: <b>${esc(d.run)}</b> · ${d.providers.map(esc).join(', ')}</div>
+    <div class="sub" style="margin-top:6px;font-size:12px">Tap any number to see what it means and the exact questions and answers behind it.</div>
+    <div class="row" style="margin-top:8px">
+      <div class="stat clickable" style="cursor:pointer" onclick="aeoCard('answers')"><div class="n">${d.n_answers}</div><div class="l">answers</div></div>
+      <div class="stat clickable" style="cursor:pointer" onclick="aeoCard('questions')"><div class="n">${d.n_queries}</div><div class="l">questions</div></div>
+      <div class="stat clickable" style="cursor:pointer" onclick="aeoCard('mentions')"><div class="n">${d.n_mentions}</div><div class="l">mentions of us</div></div>
+      <div class="stat clickable" style="cursor:pointer" onclick="aeoCard('absent')"><div class="n">${d.n_absent}</div><div class="l">absent everywhere</div></div>
+    </div>
+    <div id="aeoCardDetail"></div>
+    <h2>Who's winning the questions we're absent from <span class="sub">(click a platform to drill in)</span></h2>
+    <div class="card">
+      ${d.winners.map(([dom,n])=>`<div class="bar clickable" data-dom="${esc(dom)}" onclick="drillPlatform('${esc(dom)}')" title="see top pages cited on ${esc(dom)}">
+        <div class="name">${esc(dom)}</div>
+        <div class="track"><div class="fill" style="width:${Math.round(100*n/maxW)}%"></div></div>
+        <div class="v">${n}</div></div>`).join('')}
+    </div>
+    <h2 id="drillHead">Top pages cited</h2>
+    <div class="card" id="drill"><div class="sub">Loading…</div></div>
+    <h2>The gap list <span class="sub">(questions we answer for nobody)</span></h2>
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:6px">
+        <button id="gapWatch" class="sbtn on" onclick="showGap('watch')">This run · watchlist (${d.n_absent})</button>
+        ${d.full_run?`<button id="gapFull" class="sbtn" onclick="showGap('full')">Full set · ${esc(d.full_run)} (${d.full_absent.length})</button>`:''}
+      </div>
+      <div id="gapWatchList" class="gap-list">${d.absent.map(q=>`<div>${esc(q)}</div>`).join('')}</div>
+      ${d.full_run?`<div id="gapFullList" class="gap-list" style="display:none">${d.full_absent.map(q=>`<div>${esc(q)}</div>`).join('')}</div>`:''}
+    </div>`;
+  drillPlatform('reddit.com');  // default drill-down
+  loadInsights();
+  loadTrend();
+}
+
+// Click a stat card to see what it means AND the exact questions/answers behind it.
+function aeoCard(kind){
+  const d=_aeoD; if(!d) return;
+  const box=document.getElementById('aeoCardDetail'); if(!box) return;
+  const rawLink=x=>x.raw?`<a onclick="showRaw('${encodeURIComponent(x.raw)}','${esc(x.query).replace(/'/g,"&#39;")}')" style="cursor:pointer;font-size:12px">view answer ↗</a>`:'';
+  const qrow=x=>`<div class="thread"><b>${esc(x.query)}</b> <span class="pill">${esc(x.provider)}</span> ${rawLink(x)}</div>`;
+  let title='', def='', list='';
+  if(kind==='answers'){
+    title='Answers';
+    def=`One "answer" is a single engine's reply to a single question. This run = <b>${d.n_queries}</b> questions × <b>${d.providers.length}</b> engines (${d.providers.map(esc).join(', ')}) = <b>${d.n_answers}</b> answers.`;
+  } else if(kind==='questions'){
+    title='Questions we test';
+    def=`The buyer questions we ask every engine each run (things a real person might type into ChatGPT etc.). <b>${d.n_queries}</b> this run.`;
+    list=(d.queries||[]).map(q=>`<div>${esc(q)}</div>`).join('');
+  } else if(kind==='mentions'){
+    title='Mentions of us';
+    const m=d.mentions_detail||[], c=d.cites_detail||[];
+    def=`Answers where an engine actually named Clarence. <b>${d.n_mentions}</b> this run. Click "view answer" to read the exact response the engine gave.`;
+    list=(m.length?m.map(qrow).join(''):'<div class="sub">no engine named us in its answer text this run</div>')
+       + (c.length?`<div class="sub" style="margin:14px 0 6px"><b>Linked to your site</b> (${c.length})</div>`+c.map(x=>`<div class="thread"><b>${esc(x.query)}</b> <span class="pill">${esc(x.provider)}</span> ${rawLink(x)}${x.url?`<div class="sub" style="font-size:11px;word-break:break-all">${esc(x.url)}</div>`:''}</div>`).join(''):'');
+  } else if(kind==='absent'){
+    title='Absent everywhere';
+    def=`Questions where NO engine mentioned us. These are the content gaps to close. Scroll down to "who's winning" to see which pages beat us on them.`;
+    list=(d.absent||[]).map(q=>`<div>${esc(q)}</div>`).join('');
+  }
+  box.innerHTML=`<div class="card" style="margin-top:10px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+      <h3 style="margin:0 0 6px">${title}</h3>
+      <a onclick="document.getElementById('aeoCardDetail').innerHTML=''" style="cursor:pointer;font-size:12px">hide</a></div>
+    <div class="sub" style="margin-bottom:${list?'10px':'0'}">${def}</div>
+    ${list?`<div class="gap-list">${list}</div>`:''}</div>`;
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function showGap(which){
+  const w = which==='watch';
+  document.getElementById('gapWatchList').style.display = w?'':'none';
+  const fl=document.getElementById('gapFullList'); if(fl) fl.style.display = w?'none':'';
+  document.getElementById('gapWatch').classList.toggle('on', w);
+  const fb=document.getElementById('gapFull'); if(fb) fb.classList.toggle('on', !w);
+}
+
+const TONE = {good:'var(--good)', watch:'var(--gold)', plain:'var(--muted)'};
+async function loadInsights(boxId){
+  const box=document.getElementById(boxId||'aeoInsights'); if(!box) return;
+  const d=await (await fetch('/api/insights')).json();
+  if(!d.lines || !d.lines.length){ box.innerHTML=''; return; }
+  const dot=t=>`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${TONE[t]||'var(--muted)'};margin:5px 10px 0 0;flex:none"></span>`;
+  box.innerHTML=`
+    <div class="card" style="background:var(--surface);border-left:3px solid var(--accent)">
+      <div style="font-family:Georgia,serif;font-size:18px;margin-bottom:4px">${esc(d.headline||'What this means')}</div>
+      <div class="sub" style="margin-bottom:10px">Plain-English read of the latest run${d.compared_to?`, compared with ${esc(d.compared_to)}`:''}</div>
+      ${d.lines.map(l=>`<div style="display:flex;align-items:flex-start;margin:8px 0;font-size:14px;line-height:1.5">${dot(l.tone)}<div>${esc(l.text)}</div></div>`).join('')}
+    </div>`;
+}
+
+// ---- sparkline: array of {date,value} -> inline SVG bars ----
+function sparkBars(points, color){
+  if(!points.length) return '';
+  const w=Math.max(240, points.length*26), h=64, pad=6;
+  const max=Math.max(1, ...points.map(p=>p.value));
+  const bw=(w-2*pad)/points.length;
+  const bars=points.map((p,i)=>{
+    const bh=Math.round((h-20)*p.value/max);
+    const x=pad+i*bw, y=h-18-bh;
+    return `<rect x="${x+2}" y="${y}" width="${bw-4}" height="${bh}" rx="2" fill="${color}" opacity=".85">
+      <title>${esc(p.date)}: ${p.value}</title></rect>
+      <text x="${x+bw/2}" y="${h-6}" font-size="8" fill="#8a8175" text-anchor="middle">${esc(p.label||'')}</text>`;
+  }).join('');
+  return `<svg width="${w}" height="${h}" style="max-width:100%">${bars}</svg>`;
+}
+
+async function loadTrend(boxId){
+  const box=document.getElementById(boxId||'aeoTrend'); if(!box) return;
+  const d=await (await fetch('/api/trend')).json();
+  if(d.error || !d.runs || !d.runs.length){ box.innerHTML=''; return; }
+  const runs=d.runs;
+  const covPts=runs.map(r=>({date:r.date,value:r.coverage,label:r.date.slice(5)}));
+  const rows=runs.map((r,i)=>{
+    const prev=i>0?runs[i-1].mentions:null;
+    const dm=prev==null?'':(r.mentions-prev>=0?`+${r.mentions-prev}`:`${r.mentions-prev}`);
+    return `<tr><td>${esc(r.date)}</td><td>${esc(r.providers.join('|'))}</td>
+      <td style="text-align:right">${r.answers}</td>
+      <td style="text-align:right">${r.mentions} <span class="sub">${dm}</span></td>
+      <td style="text-align:right">${r.questions_mentioned}/${r.questions}</td>
+      <td style="text-align:right">${r.coverage}%</td>
+      <td style="text-align:right">${r.citations}</td></tr>`;
+  }).join('');
+  box.innerHTML=`
+    <h2 style="margin-top:0">Over time <span class="sub">· ${runs.length} runs, ${esc(runs[0].date)} → ${esc(runs[runs.length-1].date)}</span></h2>
+    <div class="card">
+      <div class="sub" style="margin-bottom:6px">Coverage % (questions we're named on)</div>
+      ${sparkBars(covPts,'#b25b3c')}
+      <table class="mini"><thead><tr>
+        <th>run</th><th>providers</th><th>answers</th><th>mentions</th><th>Qs hit</th><th>coverage</th><th>cites</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+      <div class="sub" style="margin-top:8px">Runs differ in scope (full set vs weekly watchlist); read mentions &amp; coverage %, not raw answer counts. Every question we're ever named on is a branded (own-name) query.</div>
+    </div>`;
+}
+
+async function loadTraffic(){
+  const el=document.getElementById('traffic');
+  const d=await (await fetch('/api/traffic')).json();
+  if(d.error){ el.innerHTML=`<div class="note">${esc(d.error)}</div>`; return; }
+  const s=d.series||[];
+  if(!s.length){ el.innerHTML='<div class="empty">No traffic rows yet.</div>'; return; }
+  const last7=s.slice(-7), prev7=s.slice(-14,-7);
+  const sum=(a,k)=>a.reduce((n,r)=>n+r[k],0);
+  const uv7=sum(last7,'uniques'), uvp=sum(prev7,'uniques');
+  const wow=uvp?Math.round(100*(uv7-uvp)/uvp):null;
+  const pvPts=s.map(r=>({date:r.date,value:r.page_views,label:r.date.slice(8)}));
+  const uvPts=s.map(r=>({date:r.date,value:r.uniques,label:r.date.slice(8)}));
+  const cs=d.countries||[]; const ctot=cs.reduce((n,[,v])=>n+v,0)||1;
+  const bots=new Set(['NL','DE','SG','HK']);
+  const crows=cs.map(([name,n])=>{
+    const noise=bots.has(name)&&n/ctot>0.15;
+    return `<div class="bar"><div class="name">${esc(name)}${noise?' ⚠':''}</div>
+      <div class="track"><div class="fill" style="width:${Math.round(100*n/cs[0][1])}%;${noise?'background:var(--muted)':''}"></div></div>
+      <div class="v">${(100*n/ctot).toFixed(0)}%</div></div>`;
+  }).join('');
+  el.innerHTML=`
+    <div class="sub">getclarence.app · Cloudflare edge · local ledger holds <b>${s.length}</b> day(s)${d.generated?` · through ${esc(d.generated)}`:''}</div>
+    <div class="row" style="margin-top:14px">
+      <div class="stat"><div class="n">${sum(s,'requests').toLocaleString()}</div><div class="l">requests (all)</div></div>
+      <div class="stat"><div class="n">${sum(s,'page_views').toLocaleString()}</div><div class="l">pageviews (all)</div></div>
+      <div class="stat"><div class="n">${uv7}</div><div class="l">uniques · last 7d</div></div>
+      <div class="stat"><div class="n">${wow==null?'n/a':(wow>=0?'+':'')+wow+'%'}</div><div class="l">uniques wk/wk</div></div>
+    </div>
+    <h2>Daily pageviews</h2><div class="card">${sparkBars(pvPts,'#3b6ea5')}</div>
+    <h2>Daily unique visitors</h2><div class="card">${sparkBars(uvPts,'#4a7c59')}</div>
+    <h2>Where visitors are <span class="sub">(by requests${d.generated?`, window through ${esc(d.generated)}`:''})</span></h2>
+    <div class="card">
+      ${crows||'<div class="sub">No country snapshot yet.</div>'}
+      <div class="sub" style="margin-top:10px">⚠ = likely datacenter/bot noise, not real audience (NL is a hosting hub). US is the real signal.</div>
+    </div>
+    <div class="note">No IP or user-agent is stored in the waitlist DB by design; this location view is edge-aggregate country only. Waitlist signups: <b>0</b> so far.</div>`;
+}
+
+async function drillPlatform(domain){
+  document.querySelectorAll('.bar.clickable').forEach(b =>
+    b.classList.toggle('sel', b.dataset.dom === domain));
+  document.getElementById('drillHead').innerHTML =
+    `Top pages cited on <b>${esc(domain)}</b> <span class="sub">· the content winning your questions</span>`;
+  const el = document.getElementById('drill');
+  el.innerHTML = '<div class="sub">Loading…</div>';
+  const d = await (await fetch('/api/aeo/pages?domain=' + encodeURIComponent(domain))).json();
+  if(!d.pages || !d.pages.length){
+    el.innerHTML = `<div class="sub">No pages found for ${esc(domain)}.</div>`; return;
+  }
+  el.innerHTML = d.pages.map(p=>`<div class="thread">
+    <div class="t"><a href="${esc(p.url)}" target="_blank">${esc(p.title)}</a></div>
+    <div class="sub">cited for ${p.n_questions} question(s) · e.g. "${esc(p.example)}"</div>
+    <div class="sub" style="font-size:11px;opacity:.65;word-break:break-all">${esc(p.url)}</div>
+  </div>`).join('') +
+  (d.subs ? `<div class="sub" style="margin-top:14px">Most-cited subreddits: ${d.subs.map(([s,n])=>`r/${esc(s)} (${n})`).join(', ')}</div>` : '');
+}
+
+let redditData = {threads:[]};
+async function runSearch(q){
+  q = (q||'').trim();
+  window._q = q;
+  if(!q){ renderReddit(); return; }
+  const d = await (await fetch('/api/reddit/search?q='+encodeURIComponent(q))).json();
+  const post = (p)=>`<div class="rcard">
+    <div class="t">${esc(p.title||'(untitled)')}</div>
+    <div class="sub" style="margin-top:4px"><span class="pill">r/${esc(p.subreddit||'')}</span>
+      ${p.author?`<span class="pill">u/${esc(p.author)}</span>`:''}
+      ${p.status&&p.status!=='todo'?`<span class="pill">${esc(p.status)}</span>`:''}
+      ${p.prospect?'<span class="pill" style="border-color:var(--good);color:var(--good)">★ possible user</span>':''}</div>
+    ${p.snippet?`<div class="sub" style="margin-top:6px;font-style:italic">"${esc(p.snippet)}"</div>`:''}
+    <div style="margin-top:6px"><a href="${esc(p.url)}" target="_blank">Open in Reddit ↗</a></div></div>`;
+  const person = (x)=>`<div class="rcard">
+    <div class="t">u/${esc(x.author)} <span class="sub">· ${esc(x.kind)} in r/${esc(x.subreddit||'')}</span></div>
+    <div class="sub" style="margin-top:6px;font-style:italic">"${esc((x.quote||'').slice(0,300))}"</div>
+    <div style="margin-top:6px"><a href="${esc(x.url)}" target="_blank">Open ↗</a>
+      · <a href="https://www.reddit.com/user/${esc(x.author)}" target="_blank">u/${esc(x.author)} ↗</a></div></div>`;
+  document.getElementById('reddit').innerHTML =
+    `<h2 style="margin-top:0">Search <span class="sub">· "${esc(q)}" · ${d.posts.length} post(s), ${d.people.length} comment(s)</span></h2>
+     <div style="margin:8px 0"><button class="sbtn" onclick="window._q='';renderReddit()">← back to the queue</button></div>
+     ${d.posts.length?`<h2 style="font-size:16px">Posts</h2>${d.posts.map(post).join('')}`:''}
+     ${d.people.length?`<h2 style="font-size:16px;margin-top:22px">People who said it in the comments</h2>${d.people.map(person).join('')}`:''}
+     ${!d.posts.length&&!d.people.length?'<div class="empty">Nothing matches that yet.</div>':''}`;
+}
+async function pullPeople(id, btn){
+  const t = redditData.threads.find(x=>x.id===id); if(!t) return;
+  const box = document.getElementById('people-'+cssId(id));
+  btn.disabled = true; const lbl = btn.textContent; btn.textContent = 'reading…';
+  const r = await post('/api/reddit/pull-people', {id, url: t.url, subreddit: t.subreddit});
+  btn.disabled = false; btn.textContent = lbl;
+  if(!r.ok){ alert('Could not read the thread: ' + (r.error||'unknown')); return; }
+  box.innerHTML = `<div class="card" style="margin:10px 0;background:var(--surface2)">
+    <div class="sub" style="margin-bottom:6px"><b>${r.people.length} people in this thread.</b>
+      The commenters are often the same audience as the poster: save anyone who describes the problem as theirs.</div>
+    ${r.people.map(p=>`<div style="padding:7px 0;border-top:1px solid var(--line)">
+      <div><b>u/${esc(p.author)}</b> <span class="pill">${esc(p.kind)}</span>
+        <button class="sbtn ${p.saved?'on':''}" onclick="savePerson('${esc(p.author)}','${id}',this)"
+          >${p.saved?'★ saved':'☆ save'}</button>
+        <a href="https://www.reddit.com/user/${esc(p.author)}" target="_blank" style="margin-left:6px">profile ↗</a></div>
+      <div class="sub" style="margin-top:3px;font-style:italic">"${esc((p.quote||'').slice(0,260))}"</div>
+    </div>`).join('')}</div>`;
+}
+async function savePerson(author, postId, btn){
+  const on = !btn.classList.contains('on');
+  btn.disabled = true;
+  const r = await post('/api/reddit/person', {author, post_id: postId, on});
+  btn.disabled = false;
+  if(r.ok){ btn.classList.toggle('on', on); btn.textContent = on?'★ saved':'☆ save';
+    if(on) toast(`Saved u/${author}. ${r.count} people saved so far.`); }
+  else alert('Could not save: '+(r.error||'unknown'));
+}
+async function toggleProspect(id, btn){
+  const t = redditData.threads.find(x=>x.id===id); if(!t) return;
+  const on = !t.prospect;
+  btn.disabled = true;
+  const r = await post('/api/reddit/prospect', {id, on});
+  btn.disabled = false;
+  if(r.ok){
+    t.prospect = on;
+    btn.classList.toggle('on', on);
+    btn.textContent = on ? '★ possible user' : '☆ possible user';
+    if(on) toast(`Saved${t.author?' u/'+t.author:''}. ${r.count} possible user(s) so far.`);
+  } else alert('Could not save: ' + (r.error||'unknown'));
+}
+async function showProspects(){
+  const d = await (await fetch('/api/reddit/prospects')).json();
+  const rows = (d.people||[]).map(p => `<div class="rcard">
+    <div class="t">${esc(p.title||'(untitled)')}</div>
+    <div class="sub" style="margin-top:4px">
+      ${p.author?`<span class="pill">u/${esc(p.author)}</span>`:'<span class="pill">author not captured</span>'}
+      <span class="pill">r/${esc(p.subreddit||'')}</span>
+      ${p.status&&p.status!=='todo'?`<span class="pill">${esc(p.status)}</span>`:''}
+    </div>
+    ${p.why?`<div class="sub" style="margin-top:6px">${esc(p.why)}</div>`:''}
+    ${p.snippet?`<div class="sub" style="margin-top:6px;font-style:italic">"${esc(p.snippet)}"</div>`:''}
+    ${p.prospect_note?`<div class="sub" style="margin-top:6px"><b>your note:</b> ${esc(p.prospect_note)}</div>`:''}
+    <div style="margin-top:6px"><a href="${esc(p.url)}" target="_blank">Open in Reddit ↗</a>
+      ${p.author?` · <a href="https://www.reddit.com/user/${esc(p.author)}" target="_blank">u/${esc(p.author)} ↗</a>`:''}
+    </div>
+  </div>`).join('');
+  document.getElementById('reddit').innerHTML =
+    `<h2 style="margin-top:0">Possible users <span class="sub">· ${(d.people||[]).length} people who described the problem in their own words</span></h2>
+     <div class="note">These are not leads. They are people who said the thing your app is for, in public, unprompted. When you have something worth showing, these are who you go back to.</div>
+     <div style="margin:8px 0"><button class="sbtn" onclick="renderReddit()">← back to the queue</button></div>${rows||'<div class="empty">None marked yet. Hit ☆ possible user on anyone who really feels it.</div>'}`;
+}
+async function showDone(){
+  const d = await (await fetch('/api/reddit?done=1&depth=1')).json();
+  const rows = (d.threads||[]).map(t => `<div class="rcard">
+    <div class="t">${esc(t.title)}</div>
+    <div class="sub" style="margin-top:4px">
+      <span class="pill">r/${esc(t.subreddit)}</span>
+      <span class="pill" style="border-color:${t.status==='posted'?'var(--good)':'var(--muted)'};color:${t.status==='posted'?'var(--good)':'var(--muted)'}">${esc(t.status)}</span>
+      ${t.status_reason?`<span class="pill">${esc(t.status_reason)}</span>`:''}
+    </div>
+    ${t.status_note?`<div class="sub" style="margin-top:6px;font-style:italic">"${esc(t.status_note)}"</div>`:''}
+    <div style="margin-top:6px"><a href="${esc(t.url)}" target="_blank">Open in Reddit ↗</a>
+      <button class="sbtn" style="margin-left:8px" onclick="setStatus('${t.id}','todo'); renderReddit()">put it back</button></div>
+  </div>`).join('');
+  document.getElementById('reddit').innerHTML =
+    `<h2 style="margin-top:0">Finished <span class="sub">· ${(d.threads||[]).length} decided. Kept for the record, out of your way.</span></h2>
+     <div style="margin:8px 0"><button class="sbtn" onclick="renderReddit()">← back to the queue</button></div>${rows}`;
+}
+function goPage(n){
+  window._page = n;
+  renderReddit();
+  document.getElementById('reddit').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function setDepth(v){
+  window._page = 1;
+  window._depth = v;
+  loadReddit();
+}
+async function loadReddit(){
+  const [rd, au] = await Promise.all([
+    fetch('/api/reddit?depth='+(window._depth||'1')
+          +'&within='+(window._within||'0')+'&order='+(window._order||'best')).then(r=>r.json()),
+    fetch('/api/authors').then(r=>r.json()).catch(()=>({authors:[]}))
+  ]);
+  redditData = rd; authorList = au.authors || [];
+  renderReddit();
+}
+function renderReddit(){
+  const el = document.getElementById('reddit');
+  const threads = redditData.threads || [];
+  // Three states, two piles, on purpose. Each of `archived` and `locked` is
+  // true, false, or not set at all. They are now filled where the answer was
+  // always free: the collector's OAuth listing carries both on every post, and
+  // monitor._from_api was reading them and dropping them until 2026-10-18. The
+  // old route, fetching each thread's old.reddit page, is walled and cannot
+  // come back. A thread collected by a laptop over HTML has neither field,
+  // because a sub's /new page does not say.
+  //
+  // BOTH keep a thread out of the reply queue, because both mean the same thing
+  // to you: it takes no comment. They are not the same fact. `archived` is
+  // Reddit's age lock, no comments and no votes, and only where the mods leave
+  // archiving on. `locked` is a mod closing this one thread, which they can
+  // undo, so a thread can come back: the next listing read says false and the
+  // store takes it.
+  //
+  // Unknown stays in the REPLY QUEUE, which is the right default and not just
+  // the old one: these posts come off a sub's /new feed hours old, and a wrong
+  // guess here costs one click to find out. Sending unknown to the Voice lab
+  // instead would empty the reply queue, which is the whole point of the board.
+  const closed = t => t.archived === true || t.locked === true;
+  const commentable = threads.filter(t => !closed(t));
+  const archived = threads.filter(closed);
+  const filt = window._filter || 'all';
+  const h = (redditData && redditData.health) || {};
+  const pw = (redditData && redditData.power) || {};
+  const powerBanner = pw.at_risk
+    ? `<div class="card" style="margin:10px 0;border-color:var(--warn);background:var(--warn-bg)">
+         <div class="t" style="color:var(--warn-ink)">Running on battery with sleep disabled</div>
+         <div class="sub" style="margin-top:6px">${pw.percent ?? '?'}% left${pw.time_left?`, about ${esc(pw.time_left)}`:''}. It will not nap to save itself, so it runs flat and stops. Plug it in, or allow sleeping again with <code>sudo bash scratch/reddit/awake.sh off</code>.</div>
+       </div>` : '';
+  const healthBanner = h.judge_error
+    ? `<div class="card" style="margin:10px 0;border-color:var(--err);background:var(--err-bg)">
+         <div class="t" style="color:var(--err)">The loop is collecting but not reading</div>
+         <div class="sub" style="margin-top:6px">${esc(h.judge_error)}</div>
+         <div class="sub" style="margin-top:6px">It is still finding and filing posts, which costs nothing, but nothing has been judged for ${h.hours_since_judged ?? '?'}h and <b>${h.backlog ?? 0}</b> posts are queued up waiting. They are not lost: fix the cause and the next run works through the backlog.</div>
+       </div>`
+    : (h.hours_since_judged != null && h.hours_since_judged > 3
+        ? `<div class="card" style="margin:10px 0;border-color:var(--warn)">
+             <div class="t" style="color:var(--warn)">Nothing judged in ${h.hours_since_judged}h</div>
+             <div class="sub" style="margin-top:6px">Last collected ${h.hours_since_collected ?? '?'}h ago, ${h.backlog ?? 0} posts waiting. If the machine sleeps, the hourly job does not run.</div>
+           </div>` : '');
+  // Where the voice set stands. Shown here because this is where the replies
+  // that feed it get written, and because a number that only exists in a
+  // terminal command is a number nobody looks at.
+  const v = (redditData && redditData.voice) || {};
+  const voiceStrip = (v.target ? (() => {
+    const done = v.usable || 0, want = v.target, pct = Math.min(100, Math.round(100*done/want));
+    const using = Math.min(done, 10);
+    const line = done < 3
+      ? `Not used yet. It starts at 3, because one example reads as a template rather than a voice.`
+      : (done >= want
+         ? `Target reached. The drafter has what it needs.`
+         : `The drafter is using ${using} of them now. ${want-done} more and the voice is as good as a prompt can make it.`);
+    return `<div class="card" style="margin:10px 0">
+      <div class="t">Your voice: ${done} of ${want} usable examples</div>
+      <div style="height:6px;border-radius:3px;background:var(--line);margin:8px 0 6px">
+        <div style="height:6px;border-radius:3px;width:${pct}%;background:var(--ink)"></div></div>
+      <div class="sub">${line}</div>
+      <div class="sub" style="margin-top:6px">
+        <b>${v.written||0}</b> you edited the draft, <b>${v.spoken||0}</b> you dictated and posted,
+        <b>${v.dictated_angles||0}</b> angles on file. Every reply you write here adds to it.</div>
+    </div>`;
+  })() : '');
+  const lane = window._lane || 'all';
+  const PER_PAGE = 15;
+  // Only claim to be slicing when we actually are. Dedupe can drop a crosspost or
+  // two at full depth, and "the best 54 of 55" over a one-post gap is just noise.
+  const sliced = (window._depth || '1') !== '1'
+    && redditData.pool && redditData.pool > commentable.length + 2;
+  let shown = commentable.filter(t => filt==='all' || (t.status||'todo')===filt);
+  if(lane!=='all') shown = shown.filter(t => (t.lane||'conversations')===lane);
+  const newCount = commentable.filter(t => t.is_new).length;
+  if(window._onlyNew) shown = shown.filter(t => t.is_new);
+  const gen = redditData.generated ? new Date(redditData.generated).toLocaleString() : 'not yet';
+  const seedNote = redditData.seed
+    ? `<div class="note">These are the <b>${threads.length} threads the AI engines already cite</b> (your AEO seed). <b>${archived.length} are closed</b> (archived, or locked by a mod) so Reddit won't let you comment; they've moved to the Voice lab below. Add Reddit API creds and Refresh to pull <b>fresh, commentable</b> threads.</div>` : '';
+  // Pages, because a wall of fifty cards is not a workable session. Fifteen is
+  // about as many as you can hold in your head before deciding to stop.
+  const pages = Math.max(1, Math.ceil(shown.length / PER_PAGE));
+  let page = Math.min(window._page || 1, pages);
+  window._page = page;
+  const slice = shown.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const pager = pages > 1 ? `<div class="toolbar" style="margin-top:12px">
+      <button class="sbtn" ${page<=1?'disabled':''} onclick="goPage(${page-1})">← back</button>
+      ${Array.from({length: pages}, (_, i) => i + 1).map(n =>
+        `<button class="sbtn ${n===page?'on':''}" onclick="goPage(${n})">${n}</button>`).join('')}
+      <button class="sbtn" ${page>=pages?'disabled':''} onclick="goPage(${page+1})">next →</button>
+      <span class="sub">${(page-1)*PER_PAGE+1}–${Math.min(page*PER_PAGE, shown.length)} of ${shown.length}</span>
+    </div>` : '';
+  const replyBody = commentable.length
+    ? (shown.length ? pager + slice.map(rcard).join('') + pager
+                    : '<div class="empty">Nothing matches this filter.</div>')
+    : `<div class="empty">No commentable threads in the seed. They're all archived or locked. This is exactly why live discovery (v1) matters: it surfaces fresh, open threads. For now, mine the Voice lab below.</div>`;
+  const voiceSection = archived.length ? `
+    <h2 style="margin-top:34px">Voice lab <span class="sub">· ${archived.length} closed thread(s): you can't reply, so study them to shape our voice</span></h2>
+    <div class="note">A thread Reddit has archived, or a mod has locked, takes no comment, but they're gold for learning how people talk about this and what a good answer sounds like. Hit ✨ Analyze to mine the emotion and a model reply (feeds the ICP corpus). Don't post to these.</div>
+    ${archived.map(rcardVoice).join('')}` : '';
+  el.innerHTML = `
+    ${powerBanner}
+    ${healthBanner}
+    ${voiceStrip}
+    ${seedNote}
+    <h2 style="margin-top:0">Reply queue <span class="sub">· ${
+      sliced ? `the best ${commentable.length} of ${redditData.pool} worth answering`
+             : `${commentable.length} thread(s) worth answering`}</span></h2>
+    ${sliced
+      ? `<div class="sub" style="margin:-4px 0 8px">Showing the top slice on purpose, so the list stays workable. The other ${redditData.pool - commentable.length} are ranked and waiting, not discarded: change the depth to see further down.</div>` : ''}
+    <div class="toolbar">
+      <button class="primary" id="refreshBtn" onclick="refresh()">↻ Refresh live threads</button>
+      <select onchange="window._filter=this.value; renderReddit()">
+        ${['all','todo','drafted','posted','skip'].map(s=>`<option value="${s}" ${s===filt?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <select onchange="window._lane=this.value; renderReddit()">
+        ${['all','conversations','launch'].map(l=>`<option value="${l}" ${l===lane?'selected':''}>${l==='all'?'both lanes':l}</option>`).join('')}
+      </select>
+      <select onchange="window._within=this.value; window._page=1; loadReddit()" title="how far back to look">
+        ${[['0','any age'],['24','last 24h'],['72','last 3 days'],['168','last week']]
+          .map(([v,l])=>`<option value="${v}" ${(window._within||'0')===v?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <select onchange="window._order=this.value; window._page=1; loadReddit()" title="how to order them">
+        ${[['best','best first'],['newest','newest first']]
+          .map(([v,l])=>`<option value="${v}" ${(window._order||'best')===v?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <select onchange="setDepth(this.value)" title="how deep into the ranked pile to show">
+        ${[['1','everything'],['0.50','top half'],['0.25','top 25%'],['0.10','top 10%']]
+          .map(([v,l])=>`<option value="${v}" ${(window._depth||'1')===v?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <label class="sub" style="display:flex;gap:5px;align-items:center">
+        <input type="checkbox" ${window._onlyNew?'checked':''}
+          onchange="window._onlyNew=this.checked; renderReddit()"> new since last run</label>
+      <span class="sub">${shown.length} left${doneThisSession?` · ${doneThisSession} cleared just now`:''} · ${newCount} new</span>
+      <button class="sbtn" onclick="showDone()">✓ finished${redditData.done?` (${redditData.done})`:''}</button>
+      <button class="sbtn" onclick="showProspects()">★ possible users</button>
+      <button class="sbtn" onclick="toggleCoverage()">${window._coverage?'hide':'show'} coverage</button>
+      <input id="qbox" placeholder="search everything you have collected…" value="${esc(window._q||'')}"
+        style="flex:1;min-width:190px;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font:inherit;font-size:13px"
+        onkeydown="if(event.key==='Enter') runSearch(this.value)">
+    </div>
+    <div id="coverage"></div>
+    ${replyBody}
+    ${voiceSection}`;
+  if(window._coverage) renderCoverage();
+}
+function rcardVoice(t){
+  const meta = [
+    `r/${esc(t.subreddit)}`,
+    t.num_comments!=null ? `${t.num_comments} replies` : null,
+    t.source==='aeo-cited' ? 'AI-cited' : null,
+  ].filter(Boolean).map(m=>`<span class="pill">${m}</span>`).join('') +
+    ` <span class="pill" style="border-color:var(--gold);color:var(--gold)">${
+      t.archived === true ? 'archived' : 'locked by a mod'} · reference only</span>`;
+  return `<div class="rcard" id="c-${cssId(t.id)}">
+    <div class="rhead"><div><div class="t">${esc(t.title)}</div>
+      <div style="margin-top:4px">${meta}</div></div></div>
+    <div class="sub" style="margin-top:8px">${esc(t.why)}</div>
+    ${t.snippet ? `<div class="sub" style="margin-top:6px;font-style:italic">"${esc(t.snippet)}"</div>` : ''}
+    <div style="margin-top:8px;display:flex;gap:12px;align-items:center">
+      <a href="${esc(t.url)}" target="_blank">Open in Reddit ↗</a>
+      <button class="sbtn" onclick="enrichThread('${t.id}', this)">✨ Analyze voice</button>
+    </div>
+    ${t.analysis ? analysisBlock(t.analysis, null) : ''}
+  </div>`;
+}
+function rcard(t){
+  const st = t.status || 'todo';
+  const meta = [
+    `r/${esc(t.subreddit)}`,
+    t.age_hours!=null ? (t.age_hours < 48 ? `${Math.round(t.age_hours)}h old`
+                                          : `${(t.age_hours/24).toFixed(1)} days old`) : null,
+    t.num_comments!=null ? `${t.num_comments} replies` : null,
+    t.source==='aeo-cited' ? 'AI-cited' : null,
+  ].filter(Boolean).map(m=>`<span class="pill">${m}</span>`).join('') +
+    (t.is_new ? ` <span class="pill" style="border-color:var(--good);color:var(--good)">new</span>` : '') +
+    (t.lane==='launch' ? ` <span class="pill" style="border-color:var(--gold);color:var(--gold)">launch lane</span>` : '') +
+    (t.stale ? ` <span class="pill" style="border-color:var(--warn);color:var(--warn-ink)">going cold</span>` : '');
+  const btns = ['todo','drafted','posted','skip'].map(s=>
+    `<button class="sbtn ${s===st?'on':''}" onclick="setStatus('${t.id}','${s}')">${s}</button>`).join('');
+  return `<div class="rcard ${st}" id="c-${cssId(t.id)}">
+    <div class="rhead">
+      <div><div class="t">${esc(t.title)}</div><div style="margin-top:4px">${meta}</div></div>
+      <div class="fit">${(t.fit*100||0).toFixed(0)}</div>
+    </div>
+    <div class="sub" style="margin-top:8px">${esc(t.why)}</div>
+    ${t.post_rule_says ? `<div class="sub" style="margin-top:6px"><b style="color:var(--gold)">before you post here:</b> ${esc(t.post_rule_says)}</div>` : ''}
+    ${t.snippet ? `<div class="sub" style="margin-top:6px;font-style:italic">"${esc(t.snippet)}"</div>` : ''}
+    <div style="margin-top:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <a href="${esc(t.url)}" target="_blank">Open in Reddit ↗</a>
+      <button class="sbtn" onclick="enrichThread('${t.id}', this)">✨ Analyze</button>
+      <button class="sbtn ${t.prospect?'on':''}" onclick="toggleProspect('${t.id}', this)"
+        title="someone who really feels this, worth going back to when you have something to show them"
+        >${t.prospect?'★ possible user':'☆ possible user'}</button>
+      <button class="sbtn" onclick="pullPeople('${t.id}', this)">👥 who's in this thread</button>
+      ${t.author?`<span class="sub">u/${esc(t.author)}</span>`:''}
+    </div>
+    ${t.analysis ? analysisBlock(t.analysis, t.id) : ''}
+    <div class="blabel">1 · the post
+      <span class="bhint">paste the whole thing from the tab you have open. Beats the excerpt above, and works even when the fetch does not.</span></div>
+    <textarea id="post-${cssId(t.id)}" class="rbox" rows="4"
+      placeholder="Paste the post here…"
+      onblur="saveField('${t.id}','post_text',this.value)">${esc(t.post_text||'')}</textarea>
+
+    <div class="blabel">2 · what you want to say
+      <span class="bhint">your own words, out loud, rough is fine. The draft gets built around this, not around a guess.</span></div>
+    <textarea id="angle-${cssId(t.id)}" class="rbox angle" rows="3"
+      placeholder="Say your piece. Talk it out, half sentences are fine…"
+      onblur="saveField('${t.id}','angle',this.value)">${esc(t.angle||'')}</textarea>
+
+    <div class="draft-row">
+      <span class="sub">write as</span>
+      <select id="au-${cssId(t.id)}" class="mini-sel">${authorOpts()}</select>
+      <select id="ctx-${cssId(t.id)}" class="mini-sel" onchange="toggleTgt('${t.id}')">
+        <option value="new_comment">new comment</option>
+        <option value="reply_comment">reply to a comment</option>
+        <option value="seed_question">seed a question</option>
+      </select>
+      <button class="sbtn" onclick="draftAs('${t.id}', this)">✍️ Draft</button>
+    </div>
+    <textarea id="tgt-${cssId(t.id)}" class="reply-tgt" style="display:none"
+      placeholder="Paste the exact comment you're replying to, so the draft answers it in context…"></textarea>
+
+    <div class="blabel">3 · the draft
+      <span class="bhint">what it wrote back, yours to edit. Nothing posts from here.</span></div>
+    <textarea id="draft-${cssId(t.id)}" class="rbox out"
+      placeholder="Empty until you hit Draft. Then make the words yours and post it yourself."
+      onblur="saveDraft('${t.id}', this.value)">${esc(t.draft||'')}</textarea>
+    <div id="people-${cssId(t.id)}"></div>
+    <div class="revise-row" id="rev-${cssId(t.id)}" style="${t.draft?'':'display:none'}">
+      <span class="sub">not quite right?</span>
+      ${Object.entries(REVISIONS).map(([k,label])=>
+        `<button class="sbtn" onclick="revise('${t.id}','${k}',this)">${esc(label)}</button>`).join('')}
+      <input id="rq-${cssId(t.id)}" placeholder="or say what to change…"
+        onkeydown="if(event.key==='Enter') revise('${t.id}', this.value, this)">
+      <button class="sbtn" onclick="undoRevise('${t.id}',this)" id="undo-${cssId(t.id)}"
+        style="display:none">← previous</button>
+    </div>
+    <div class="status-btns">${btns}</div>
+  </div>`;
+}
+// One tap for the things usually wrong with a first draft. Each is an EDIT of
+// what is already in the box, so the version you nearly liked survives.
+const REVISIONS = {
+  'shorter':      'shorter',
+  'warmer':       'warmer',
+  'less-advice':  'less advice',
+  'more-me':      'sound more like me',
+  'no-question':  'drop the question',
+  'less-salesy':  'less salesy',
+};
+const draftHistory = {};
+async function revise(id, instruction, btn){
+  const box = document.getElementById('draft-'+cssId(id));
+  const cur = (box.value||'').trim();
+  if(!cur){ alert('Nothing to revise yet. Hit Draft first.'); return; }
+  const t = redditData.threads.find(x=>x.id===id) || {};
+  const custom = document.getElementById('rq-'+cssId(id));
+  const what = (instruction === (custom && custom.value) ? instruction : instruction).trim();
+  if(!what) return;
+  (draftHistory[id] = draftHistory[id] || []).push(cur);
+  const label = btn.tagName === 'BUTTON' ? btn.textContent : null;
+  if(label){ btn.disabled = true; btn.textContent = '…'; }
+  const r = await post('/api/reddit/revise', {
+    draft: cur, instruction: what, post_text: t.post_text || '',
+    angle: t.angle || '', author: document.getElementById('au-'+cssId(id)).value});
+  if(label){ btn.disabled = false; btn.textContent = label; }
+  if(r.ok && r.draft){
+    box.value = r.draft;
+    saveDraft(id, r.draft);
+    if(custom) custom.value = '';
+    const u = document.getElementById('undo-'+cssId(id));
+    if(u) u.style.display = 'inline-block';
+  } else {
+    alert('Revise failed: ' + (r.error || 'unknown'));
+    draftHistory[id].pop();
+  }
+}
+function undoRevise(id, btn){
+  const h = draftHistory[id] || [];
+  if(!h.length) return;
+  const box = document.getElementById('draft-'+cssId(id));
+  box.value = h.pop();
+  saveDraft(id, box.value);
+  if(!h.length) btn.style.display = 'none';
+}
+const SKIP_REASONS = {
+  'deleted':        'post was deleted or removed',
+  'off-subject':    'not about keeping in touch',
+  'too-late':       'too old or already answered',
+  'nothing-to-add': 'nothing useful to add',
+  'wrong-crowd':    'not my community',
+  'would-be-ad':    'would read as an ad',
+  'not-my-place':   'too raw, not mine to answer',
+};
+// Where the good threads come from. The watchlist should not stay a guess: every
+// triage verdict is filed under its subreddit, so after a few runs this knows
+// which communities produce people worth answering and which only produce noise.
+function toggleCoverage(){ window._coverage = !window._coverage; renderReddit(); }
+async function renderCoverage(){
+  const el = document.getElementById('coverage'); if(!el) return;
+  el.innerHTML = '<div class="sub">reading the record…</div>';
+  const lane = (window._lane && window._lane!=='all') ? window._lane : 'conversations';
+  const d = await fetch('/api/reddit/subs?lane='+encodeURIComponent(lane)).then(r=>r.json()).catch(()=>null);
+  if(!d || d.error){ el.innerHTML = `<div class="sub">No coverage data yet: ${esc(d?.error||'run a refresh first')}</div>`; return; }
+  const row = r => `<tr><td style="padding:2px 10px 2px 0">${r.watched?'':'<span class="pill" style="border-color:var(--good);color:var(--good)">off list</span> '}<a href="https://www.reddit.com/r/${esc(r.sub)}/new/" target="_blank">r/${esc(r.sub)}</a></td>
+    <td class="sub" style="padding:2px 10px">${r.kept} kept of ${r.seen} read${r.posted?` · <b style="color:var(--good)">you posted ${r.posted}</b>`:''}${r.skipped?` · you skipped ${r.skipped}`:''}</td>
+    <td class="sub" style="padding:2px 10px">worth ${(r.worth??0).toFixed(2)}</td>
+    <td>${r.watched
+      ? `<button class="sbtn" onclick="watchSub('${esc(r.sub)}','drop',this)">drop</button>`
+      : `<button class="sbtn" onclick="watchSub('${esc(r.sub)}','add',this)">add to watchlist</button>`}</td></tr>`;
+  const top = (d.subs||[]).filter(r=>r.kept>0).slice(0,15);
+  const dead = (d.suggest_drop||[]).slice(0,10);
+  el.innerHTML = `<div class="card" style="margin:10px 0">
+    <div class="t">Find the subreddits for a question</div>
+    <div class="sub" style="margin:4px 0 8px">Type a question the way a person would ask it. It works out the phrases people really write, searches all of Reddit, and tells you which communities the conversation lives in.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="findq" style="flex:1;min-width:280px;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font:inherit"
+        placeholder="how do you keep in touch with friends who moved away"
+        onkeydown="if(event.key==='Enter') runFind(this.nextElementSibling)">
+      <button class="sbtn" onclick="runFind(this)">search Reddit</button>
+    </div>
+    <div id="findout"></div>
+  </div>
+  <div class="card" style="margin:10px 0">
+    <div class="t">Where the good threads come from</div>
+    <div class="sub" style="margin:4px 0 10px">${d.n_judged} posts judged across ${(d.subs||[]).length} subreddits, ${d.n_watched} on your watchlist. This is the record, not a guess.</div>
+    ${d.store?`<div class="sub" style="margin:-4px 0 10px">The pile so far: <b>${d.store.total}</b> posts collected across <b>${d.store.subs}</b> subreddits, <b>${d.store.judged}</b> read by the model, <b>${d.store.kept}</b> worth answering, <b>${d.store.posted}</b> posted by you, <b>${d.store.skipped}</b> skipped. Every post you act on teaches the ranking which communities deserve the next run's reads.</div>`:''}
+    <table style="border-collapse:collapse">${top.map(row).join('')}</table>
+    ${dead.length?`<div class="sub" style="margin-top:12px"><b>Costing you reads and giving nothing back:</b></div>
+      <table style="border-collapse:collapse">${dead.map(row).join('')}</table>`:''}
+    <div class="sub" style="margin-top:10px">Changes take effect on the next refresh.</div></div>`;
+}
+async function runFind(btn){
+  const q = document.getElementById('findq').value.trim(); if(!q) return;
+  const out = document.getElementById('findout');
+  const lane = (window._lane && window._lane!=='all') ? window._lane : 'conversations';
+  btn.disabled = true; btn.textContent = 'searching…';
+  out.innerHTML = '<div class="sub" style="margin-top:10px">working out how people phrase this, then searching. About a minute.</div>';
+  const d = await fetch('/api/reddit/find?lane='+lane+'&q='+encodeURIComponent(q)).then(r=>r.json()).catch(()=>null);
+  btn.disabled = false; btn.textContent = 'search Reddit';
+  if(!d || d.error){ out.innerHTML = `<div class="sub">Failed: ${esc(d?.error||'unknown')}</div>`; return; }
+  const rows = (d.subs||[]).slice(0,20).map(r=>`<tr>
+    <td style="padding:2px 10px 2px 0">${r.watched?'':'<span class="pill" style="border-color:var(--good);color:var(--good)">new</span> '}<a href="https://www.reddit.com/r/${esc(r.sub)}/new/" target="_blank">r/${esc(r.sub)}</a></td>
+    <td class="sub" style="padding:2px 10px">${r.hits} post(s), ${r.phrases.length} phrasing(s)</td>
+    <td class="sub" style="padding:2px 10px;font-style:italic">${esc((r.samples[0]||{}).title||'')}</td>
+    <td>${r.watched?'<span class="sub">watching</span>':`<button class="sbtn" onclick="watchSub('${esc(r.sub)}','add',this)">add</button>`}</td></tr>`).join('');
+  out.innerHTML = `<div class="sub" style="margin:10px 0 6px">Searched: ${(d.phrases||[]).map(p=>'“'+esc(p)+'”').join(' · ')}</div>
+    <div class="sub" style="margin-bottom:6px">${d.n_posts} posts across ${d.n_subs} subreddits. A sub that shows up for several phrasings is where the conversation actually lives.</div>
+    <table style="border-collapse:collapse">${rows}</table>`;
+}
+async function watchSub(sub, action, btn){
+  btn.disabled = true; btn.textContent = action==='add' ? 'adding…' : 'dropping…';
+  const lane = (window._lane && window._lane!=='all') ? window._lane : 'conversations';
+  const r = await post('/api/reddit/watch',{sub, action, lane});
+  if(r.ok){ renderCoverage(); } else { alert('Failed: '+(r.error||'unknown')); btn.disabled=false; }
+}
+let authorList = [];
+function authorOpts(){
+  const list = authorList.length ? authorList : [{id:'curious-newcomer', name:'Me (new here, learning)'}];
+  return list.map(a=>`<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+}
+function toggleTgt(id){
+  const ctx=document.getElementById('ctx-'+cssId(id)).value;
+  const tgt=document.getElementById('tgt-'+cssId(id));
+  if(tgt) tgt.style.display = ctx==='reply_comment' ? 'block' : 'none';
+}
+async function draftAs(id, btn){
+  const t = redditData.threads.find(x=>x.id===id); if(!t) return;
+  const author=document.getElementById('au-'+cssId(id)).value;
+  const context=document.getElementById('ctx-'+cssId(id)).value;
+  const target=context==='reply_comment' ? document.getElementById('tgt-'+cssId(id)).value : null;
+  // Box 1 and box 2 go up with the request. Whatever is in them right now wins
+  // over the queue's excerpt, so a dictated angle takes effect without a blur.
+  const postText=(document.getElementById('post-'+cssId(id))||{}).value||'';
+  const angle=(document.getElementById('angle-'+cssId(id))||{}).value||'';
+  // Both in ONE save. Two overlapping saves would each write the state they read,
+  // and whichever landed second would quietly drop the other's box.
+  if(postText!==(t.post_text||'') || angle!==(t.angle||'')){
+    t.post_text=postText; t.angle=angle;
+    await post('/api/reddit/item',{id, post_text:postText, angle});
+  }
+  btn.disabled=true; const label=btn.textContent; btn.textContent='✍️ drafting…';
+  const r = await post('/api/reddit/draft',{id, url:t.url, author, context, target_comment:target,
+                                            post_text:postText, angle});
+  btn.disabled=false; btn.textContent=label;
+  if(r.ok){
+    const box=document.getElementById('draft-'+cssId(id));
+    box.value = r.draft; t.draft=r.draft; saveDraft(id, r.draft);
+    const rev=document.getElementById('rev-'+cssId(id)); if(rev) rev.style.display='flex';
+    box.focus();
+  } else {
+    alert('Draft failed: '+(r.error||'unknown'));
+  }
+}
+const FIT_COLOR = {strong:'var(--good)', weak:'var(--gold)', none:'var(--muted)'};
+function chips(arr){ return (arr||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join(' '); }
+function analysisBlock(a, id){
+  const fit=(a.clarence_fit||'none').toLowerCase();
+  return `<div class="card" style="margin:10px 0 0;background:var(--surface2)">
+    <div style="margin-bottom:6px"><span class="pill" style="border-color:${FIT_COLOR[fit]||'var(--line)'};color:${FIT_COLOR[fit]||'var(--muted)'}">fit: ${esc(fit)}</span>
+      <span class="sub">${esc(a.fit_reason||'')}</span></div>
+    ${a.emotional_themes?.length?`<div class="sub" style="margin-top:6px"><b>Feelings:</b> ${chips(a.emotional_themes)}</div>`:''}
+    ${a.pain_points?.length?`<div class="sub" style="margin-top:6px"><b>Pain:</b> ${chips(a.pain_points)}</div>`:''}
+    ${a.what_they_want?.length?`<div class="sub" style="margin-top:6px"><b>Wants:</b> ${chips(a.what_they_want)}</div>`:''}
+    ${a.verbatim_quotes?.length?`<div class="sub" style="margin-top:6px;font-style:italic">"${a.verbatim_quotes.map(esc).join('" · "')}"</div>`:''}
+    ${a.suggested_reply?`<div class="sub" style="margin-top:8px"><b>It would say:</b> <span style="font-style:italic">${esc(a.suggested_reply)}</span>
+      ${id?`<button class="sbtn" style="margin-left:6px" onclick="useSuggested('${id}')">use as draft</button>`:''}</div>`:''}
+  </div>`;
+}
+// The analyzer's own reply is a reference, not your draft. It only lands in box
+// 3 if you say so: a draft you did not ask for is how you end up posting one.
+function useSuggested(id){
+  const t = redditData.threads.find(x=>x.id===id); if(!t?.analysis?.suggested_reply) return;
+  const box = document.getElementById('draft-'+cssId(id)); if(!box) return;
+  box.value = t.analysis.suggested_reply;
+  saveDraft(id, box.value); box.focus();
+}
+async function enrichThread(id, btn){
+  const t = redditData.threads.find(x=>x.id===id); if(!t) return;
+  btn.disabled=true; const label=btn.textContent; btn.textContent='✨ analyzing…';
+  const postText=(document.getElementById('post-'+cssId(id))||{}).value||'';
+  const r = await post('/api/reddit/enrich',{id, url:t.url, post_text:postText});
+  if(r.ok){
+    t.analysis = r.analysis;
+    renderReddit();
+  } else {
+    alert('Analyze failed: '+(r.error||'unknown'));
+    btn.disabled=false; btn.textContent=label;
+  }
+}
+
+async function loadVoices(){
+  const el=document.getElementById('voices');
+  const [d, au] = await Promise.all([
+    fetch('/api/voices').then(r=>r.json()),
+    fetch('/api/authors').then(r=>r.json()).catch(()=>({authors:[]}))
+  ]);
+  const list=(arr)=>arr.map(x=>`<span class="pill">${esc(x)}</span>`).join(' ');
+  const personaCard=p=>`<div class="rcard">
+    <div class="t">${esc(p.name)}</div>
+    <div class="sub" style="font-style:italic;margin:2px 0 8px">${esc(p.tagline)}</div>
+    <div class="sub">${esc(p.who)}</div>
+    ${p.pains?.length?`<div class="sub" style="margin-top:8px"><b>Pains:</b> ${list(p.pains)}</div>`:''}
+    ${p.wants?.length?`<div class="sub" style="margin-top:6px"><b>Wants:</b> ${list(p.wants)}</div>`:''}
+    ${p.their_words?.length?`<div class="sub" style="margin-top:6px;font-style:italic">"${p.their_words.map(esc).join('" · "')}"</div>`:''}
+    ${p.where?.length?`<div class="sub" style="margin-top:6px;font-size:12px">Found in: ${p.where.map(esc).join(', ')}</div>`:''}
+  </div>`;
+  const voiceCard=v=>`<div class="rcard">
+    <div class="t">${esc(v.name)}</div>
+    ${v.default_for?.length?`<div style="margin:4px 0 6px">${list(v.default_for)}</div>`:''}
+    <div class="sub">${esc(v.description)}</div>
+    ${v.do?.length?`<div class="sub" style="margin-top:8px"><b style="color:var(--good)">Do:</b> ${v.do.map(esc).join(' · ')}</div>`:''}
+    ${v.dont?.length?`<div class="sub" style="margin-top:6px"><b style="color:var(--accent)">Don't:</b> ${v.dont.map(esc).join(' · ')}</div>`:''}
+    ${v.grounded_in?.length?`<div class="sub" style="margin-top:6px;font-size:12px">Grounded in: ${v.grounded_in.map(esc).join('; ')}</div>`:''}
+  </div>`;
+  const authorCard=a=>{
+    const det=a.your_details||{};
+    const fills=Object.entries(det).filter(([k])=>k!=='_note');
+    const fillRows=fills.map(([k,v])=>`<div class="sub" style="margin-top:3px">
+      <b>${esc(k.replace(/_/g,' '))}:</b> ${v ? esc(v) : '<span style="color:var(--accent)">(fill this in)</span>'}</div>`).join('');
+    return `<div class="rcard">
+      <div class="t">${esc(a.name)} <span class="pill" style="border-color:var(--good);color:var(--good)">you write as this</span></div>
+      <div class="sub" style="font-style:italic;margin:2px 0 8px">${esc(a.one_line||'')}</div>
+      ${a.bio?`<div class="sub">${esc(a.bio)}</div>`:''}
+      ${a.why?.length?`<div class="sub" style="margin-top:8px"><b>Why it matters to you:</b><ul style="margin:4px 0 0 16px">${a.why.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>`:''}
+      ${a.voice?.do?.length?`<div class="sub" style="margin-top:8px"><b style="color:var(--good)">Do:</b> ${a.voice.do.map(esc).join(' · ')}</div>`:''}
+      ${a.voice?.dont?.length?`<div class="sub" style="margin-top:6px"><b style="color:var(--accent)">Don't:</b> ${a.voice.dont.map(esc).join(' · ')}</div>`:''}
+      ${a.sounds_like?.length?`<div class="sub" style="margin-top:6px;font-style:italic">Sounds like: "${a.sounds_like.map(esc).join('" · "')}"</div>`:''}
+      ${fillRows?`<div class="card" style="margin-top:10px;background:var(--surface2)">
+        <div class="sub" style="margin-bottom:4px"><b>Your real details</b>, edit scratch/content/personas.json to make this fully yours</div>
+        ${fillRows}</div>`:''}
+    </div>`;
+  };
+  el.innerHTML=`
+    <div class="sub">You write in a <b>voice</b>, as an <b>author</b> (that's you, the builder), aimed at a <b>persona</b>. The Reddit drafter and content pipeline pull from these. Edit scratch/content/voices.json and personas.json.</div>
+    <h2>Who you write as <span class="sub">(the builder, and any other authors)</span></h2>
+    ${(au.authors||[]).length?au.authors.map(authorCard).join(''):'<div class="sub">none yet</div>'}
+    <h2 style="margin-top:28px">Voices <span class="sub">(the tones the content pipeline can write in)</span></h2>
+    ${(d.voices||[]).length?d.voices.map(voiceCard).join(''):'<div class="sub">none yet</div>'}
+    <h2 style="margin-top:28px">Personas <span class="sub">(who we talk to)</span></h2>
+    ${(d.personas||[]).length?d.personas.map(personaCard).join(''):'<div class="sub">none yet</div>'}`;
+}
+
+let sourcesData = {sources:[]};
+async function loadSources(){
+  sourcesData = await (await fetch('/api/sources')).json();
+  window._srcPlatform = window._srcPlatform || 'all';
+  window._srcSaved = window._srcSaved || false;
+  renderSources();
+}
+function srcRow(s){
+  const star = s.saved ? '★' : '☆';
+  const noteBox = s.saved
+    ? `<textarea class="srcnote" placeholder="Why this source matters, language to replicate…"
+         onblur="saveSourceNote('${encodeURIComponent(s.url)}', this.value)">${esc(s.note||'')}</textarea>` : '';
+  return `<div class="rcard" style="padding:12px 16px">
+    <div class="rhead">
+      <div style="flex:1">
+        <div><span class="pill">${esc(s.platform)}</span>
+          <b>${esc(s.title)}</b></div>
+        <div class="sub" style="margin-top:4px">${esc(s.domain)} · cited for <b>${s.n_queries}</b> question(s) · ${s.answers}× · seen ${esc(s.first_seen)}→${esc(s.last_seen)}</div>
+        <div class="sub" style="margin-top:4px;font-size:12px">e.g. ${s.queries.slice(0,3).map(q=>`“${esc(q)}”`).join(', ')}</div>
+        <div style="margin-top:6px"><a href="${esc(s.url)}" target="_blank" style="font-size:12px;word-break:break-all">${esc(s.url)}</a></div>
+      </div>
+      <button class="sbtn ${s.saved?'on':''}" title="save this source"
+        onclick="toggleSave('${encodeURIComponent(s.url)}', ${!s.saved})">${star}</button>
+    </div>
+    ${noteBox}
+  </div>`;
+}
+function renderSources(){
+  const el=document.getElementById('sources');
+  const d=sourcesData;
+  if(d.error){ el.innerHTML=`<div class="note">${esc(d.error)}</div>`; return; }
+  const all=d.sources||[];
+  const q=(window._srcQuery||'').toLowerCase();
+  const plat=window._srcPlatform||'all';
+  const onlySaved=window._srcSaved;
+  let shown=all.filter(s=>
+    (plat==='all'||s.platform===plat) &&
+    (!onlySaved||s.saved) &&
+    (!q || (s.title+' '+s.domain+' '+s.queries.join(' ')).toLowerCase().includes(q)));
+  const saved=all.filter(s=>s.saved);
+  const platOpts=['all',...d.platforms].map(p=>`<option value="${esc(p)}" ${p===plat?'selected':''}>${esc(p)}</option>`).join('');
+  el.innerHTML=`
+    <div class="sub">Every page the answer engines have cited, across ${(d.built_from_runs||[]).length} runs · <b>${d.n_sources}</b> sources · <b>${d.saved_count}</b> saved</div>
+    <div class="toolbar" style="margin-top:12px">
+      <input id="srcSearch" placeholder="Search sources, domains, questions…" value="${esc(window._srcQuery||'')}"
+        oninput="window._srcQuery=this.value; renderSources(); document.getElementById('srcSearch').focus()"
+        style="flex:1;min-width:200px;font:inherit;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card)">
+      <select onchange="window._srcPlatform=this.value; renderSources()">${platOpts}</select>
+      <label class="sub" style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" ${onlySaved?'checked':''} onchange="window._srcSaved=this.checked; renderSources()"> saved only</label>
+    </div>
+    ${saved.length && !onlySaved ? `<h2>★ Saved <span class="sub">(${saved.length})</span></h2>${saved.map(srcRow).join('')}<h2>All sources <span class="sub">(${shown.length} shown)</span></h2>` : ''}
+    ${shown.length ? shown.slice(0,300).map(srcRow).join('') : '<div class="empty">No sources match.</div>'}
+    ${shown.length>300 ? `<div class="sub" style="text-align:center;margin-top:12px">Showing top 300 of ${shown.length}. Narrow with search or platform.</div>`:''}`;
+}
+async function toggleSave(encUrl, saved){
+  const url=decodeURIComponent(encUrl);
+  await post('/api/sources/save',{url, saved});
+  const s=sourcesData.sources.find(x=>x.url===url); if(s){ s.saved=saved; sourcesData.saved_count+=saved?1:-1; }
+  renderSources();
+}
+async function saveSourceNote(encUrl, note){
+  const url=decodeURIComponent(encUrl);
+  await post('/api/sources/save',{url, note});
+  const s=sourcesData.sources.find(x=>x.url===url); if(s) s.note=note;
+}
+
+async function loadCorpus(){
+  const el=document.getElementById('icp');
+  const d=await (await fetch('/api/corpus')).json();
+  if(!d.n_threads){ el.innerHTML='<div class="empty">No signals yet. Go to the Reddit queue and hit ✨ Analyze + draft on a thread.</div>'; return; }
+  const board=(title,rows)=>`<h2>${title} <span class="sub">(across ${d.n_threads} thread${d.n_threads>1?'s':''})</span></h2>
+    <div class="card">${(rows||[]).length?rows.map(([name,n])=>`<div class="bar">
+      <div class="name" style="width:auto;flex:1;text-align:left">${esc(name)}</div>
+      <div class="v" style="width:auto">×${n}</div></div>`).join(''):'<div class="sub">none yet</div>'}</div>`;
+  el.innerHTML=`
+    <div class="sub">ICP research corpus · ${d.n_threads} thread(s) analyzed · saved to scratch/reddit/icp_corpus.jsonl</div>
+    ${board('Pain points', d.pain_points)}
+    ${board('What they want', d.what_they_want)}
+    ${board('Emotional themes', d.emotional_themes)}
+    <h2>Verbatim voice <span class="sub">(their exact words, for copy &amp; positioning)</span></h2>
+    <div class="card">${(d.quotes||[]).map(q=>`<div class="thread">
+      <div style="font-style:italic">"${esc(q.quote)}"</div>
+      <div class="sub" style="font-size:11px"><a href="${esc(q.url)}" target="_blank">${esc(q.title||q.url)}</a></div>
+    </div>`).join('')||'<div class="sub">none yet</div>'}</div>`;
+}
+const cssId = s => s.replace(/[^a-z0-9]/gi,'_');
+
+async function post(path, body){
+  return (await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)})).json();
+}
+// Finishing with a thread should clear it off the desk. The record keeps it, the
+// workspace does not: scrolling past your own settled decisions is the fastest
+// way to make a queue feel unworkable.
+let doneThisSession = 0;
+async function setStatus(id, status, reason, note){
+  const payload = {id, status, reason: reason||null, note: note||null};
+  if(status === 'posted'){
+    // Send the box's text WITH the decision, in one request. The box saves on
+    // blur and clicking this button is what blurs it, so the two were racing:
+    // whichever landed second won, and when the status won, the reply recorded
+    // as sent was the version from before the last edit. The edit is the part
+    // worth keeping, so it travels with the click that says it went out.
+    const box = document.getElementById('draft-'+cssId(id));
+    if(box && (box.value||'').trim()) payload.draft = box.value;
+  }
+  await post('/api/reddit/item', payload);
+  const i = redditData.threads.findIndex(x => x.id === id);
+  const t = i >= 0 ? redditData.threads[i] : null;
+  if(t){ t.status = status; if(reason) t.status_reason = reason; }
+  if(t && (status === 'posted' || status === 'skip')){
+    redditData.threads.splice(i, 1);
+    doneThisSession++;
+    const undo = () => {
+      redditData.threads.splice(i, 0, t);
+      doneThisSession--;
+      setStatus(id, 'todo');
+    };
+    // Ask why AFTER it is off the desk. Asking first made skip a two step
+    // action, so a card you had already dismissed in your head stayed put.
+    toast(status === 'posted' ? 'Posted. Off the list.' : 'Skipped.', undo,
+          status === 'skip' ? id : null);
+  }
+  renderReddit();
+}
+let _toastTimer = null;
+async function addReason(id, reason, btn){
+  await post('/api/reddit/item', {id, status: 'skip', reason});
+  const el = document.getElementById('toast');
+  if(el) el.innerHTML = '<span>Noted: ' + esc(SKIP_REASONS[reason] || reason) + '</span>';
+  setTimeout(() => { if(el) el.style.display = 'none'; }, 1800);
+}
+function toast(msg, undo, askWhyFor){
+  let el = document.getElementById('toast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:24px;'
+      + 'z-index:999;padding:10px 16px;border-radius:10px;background:var(--surface);'
+      + 'border:1px solid var(--line);box-shadow:var(--shadow);font:13px/1.4 var(--sans);'
+      + 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:min(94vw,780px)';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = '<span>' + esc(msg) + '</span>';
+  if(askWhyFor){
+    const wrap = document.createElement('span');
+    wrap.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;align-items:center';
+    wrap.innerHTML = '<span class="sub" style="margin-right:2px">why?</span>' +
+      Object.entries(SKIP_REASONS).map(([k, label]) =>
+        `<button class="sbtn" style="font-size:12px;padding:3px 7px"
+           onclick="addReason('${askWhyFor}','${k}',this)">${esc(label)}</button>`).join('');
+    el.appendChild(wrap);
+  }
+  if(undo){
+    const b = document.createElement('button');
+    b.className = 'sbtn';
+    b.textContent = 'undo';
+    b.onclick = () => { el.style.display = 'none'; undo(); };
+    el.appendChild(b);
+  }
+  el.style.display = 'flex';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.style.display = 'none'; },
+                           askWhyFor ? 12000 : 7000);
+}
+async function saveDraft(id, draft){ return saveField(id, 'draft', draft); }
+async function saveField(id, field, value){
+  await post('/api/reddit/item',{id, [field]: value});
+  const t = redditData.threads.find(x=>x.id===id); if(t) t[field]=value;
+}
+async function refresh(){
+  const b=document.getElementById('refreshBtn'); b.disabled=true; b.textContent='↻ fetching…';
+  const r = await post('/api/reddit/refresh',{});
+  if(r.ok && r.queue){ redditData=r.queue; renderReddit(); }
+  else { alert('Refresh failed: '+(r.error||'unknown')+'\\n(Usually means Reddit creds not set yet.)');
+    b.disabled=false; b.textContent='↻ Refresh live threads'; }
+}
+
+// ---- First 10 users: the hand-recruiting ledger. Each post you engage becomes
+//      a row with a tagged invite link, so attribution can tell you which
+//      outreach actually converted. The goal is 10 real users, not traffic.
+const OR_ACTIONS = ['commented','replied','DM','posted','emailed'];
+
+async function loadFirst10(){
+  const el=document.getElementById('first10');
+  let d; try{ d=await (await fetch('/api/outreach')).json(); }
+  catch(e){ el.innerHTML='<div class="empty">could not load</div>'; return; }
+  if(d.error){ el.innerHTML=`<div class="empty">${esc(d.error)}</div>`; return; }
+  renderFirst10(el, d);
+}
+
+function orFunnelPills(d){
+  return d.statuses.filter(s=>s!=='passed').map(s=>
+    `<span class="pill">${esc(d.status_label[s])} <b>${d.funnel[s]||0}</b></span>`
+  ).join(' ');
+}
+
+function orCard(d, e){
+  const opts=d.statuses.map(s=>`<option value="${s}"${s===e.status?' selected':''}>${esc(d.status_label[s])}</option>`).join('');
+  const warm=e.warm?'<span class="pill" title="someone you know">warm</span>':'<span class="pill" title="a stranger: honest demand signal">cold</span>';
+  const link=esc(e.url);
+  return `<div class="thread">
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <span class="pill">${esc(e.platform)}</span>
+      ${e.handle?`<b>${esc(e.handle)}</b>`:''}
+      ${warm}
+      ${e.url?`<a href="${link}" target="_blank" style="font-size:12px">the post ↗</a>`:''}
+      <span style="margin-left:auto"></span>
+      <select onchange="setOutreachStatus('${e.id}', this.value)" title="funnel stage">${opts}</select>
+      <button class="sbtn" onclick="deleteOutreach('${e.id}')" title="remove">✕</button>
+    </div>
+    ${e.signal?`<div class="sub" style="margin-top:5px">their signal: ${esc(e.signal)}</div>`:''}
+    ${e.message?`<div style="margin-top:4px;font-size:12px">you (${esc(e.action||'said')}): ${esc(e.message)}</div>`:''}
+    ${e.notes?`<div class="sub" style="font-size:11px;margin-top:3px">${esc(e.notes)}</div>`:''}
+    <div style="margin-top:6px;font-size:11px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <code style="background:var(--paper);padding:2px 4px;border-radius:4px">${esc(e.invite_link)}</code>
+      <button class="sbtn" onclick="copyInvite('${esc(e.invite_link)}', this)">copy invite link</button>
+    </div>
+  </div>`;
+}
+
+function renderFirst10(el, d){
+  const pct=Math.min(100, Math.round(100*d.users/d.goal));
+  const live=d.entries.filter(e=>e.status!=='passed');
+  const cards=live.length?live.map(e=>orCard(d,e)).join(''):'<div class="sub" style="font-size:12px">no one yet. Paste the first post you are about to comment on.</div>';
+  el.innerHTML=`
+    <div class="sub">The goal right now is not traffic, it is <b>10 real users recruited by hand</b> from where the pain already lives. Log each post you engage. Send people the tagged invite link below so, when they sign up, attribution shows which outreach worked. Warm (people you know) get the product used and debugged; cold (strangers) give you honest demand signal. Track both, do not fool yourself.</div>
+    <div class="card" style="margin:12px 0">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font-size:26px;font-weight:700">${d.users} <span class="sub" style="font-size:15px;font-weight:400">/ ${d.goal} users</span></div>
+        <div class="sub">${d.warm_users} warm · ${d.cold_users} cold · ${d.remaining} to go</div>
+      </div>
+      <div style="height:8px;background:var(--paper);border-radius:5px;margin:8px 0;overflow:hidden"><div style="height:100%;width:${pct}%;background:#4a7c59"></div></div>
+      <div>${orFunnelPills(d)}</div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <b>Log a post you are engaging</b>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <input id="orUrl" placeholder="URL of the post (reddit / x / tiktok / hn …)" style="flex:3;min-width:260px">
+        <input id="orHandle" placeholder="who (handle)" style="flex:1;min-width:120px">
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        <input id="orSignal" placeholder="their signal (what pain they voiced)" style="flex:3;min-width:220px">
+        <select id="orAction" style="flex:0">${OR_ACTIONS.map(a=>`<option value="${a}">${a}</option>`).join('')}</select>
+        <label class="sub" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="orWarm"> warm (I know them)</label>
+      </div>
+      <textarea id="orMsg" placeholder="what you said / your angle (optional)" style="width:100%;margin-top:6px;min-height:44px"></textarea>
+      <div style="margin-top:6px"><button class="primary" onclick="addOutreach()">Add</button> <span id="orRes" class="sub"></span></div>
+    </div>
+    <div>${cards}</div>`;
+}
+
+async function addOutreach(){
+  const g=id=>document.getElementById(id);
+  const url=g('orUrl').value.trim(), handle=g('orHandle').value.trim();
+  const res=g('orRes');
+  if(!url && !handle){ res.textContent='need a url or a handle'; return; }
+  const body={url, handle, signal:g('orSignal').value.trim(), action:g('orAction').value,
+              message:g('orMsg').value.trim(), warm:g('orWarm').checked};
+  const d=await (await fetch('/api/outreach/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+  if(d.ok) loadFirst10(); else res.textContent=esc(d.error||'not added');
+}
+
+async function setOutreachStatus(id,status){
+  await fetch('/api/outreach/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
+  loadFirst10();
+}
+
+async function deleteOutreach(id){
+  await fetch('/api/outreach/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadFirst10();
+}
+
+function copyInvite(link, btn){
+  navigator.clipboard.writeText(link).then(()=>{ const t=btn.textContent; btn.textContent='copied ✓'; setTimeout(()=>btn.textContent=t,1200); });
+}
+
+loadHeader(); loadFirst10();
+setInterval(loadHeader, 120000);   // keep the header status + next-run chip fresh
+</script>
+</body>
+</html>

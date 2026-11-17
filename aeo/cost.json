@@ -1,0 +1,271 @@
+{
+  "total": 126.2,
+  "assumptions": {
+    "input_tokens_per_call": 3000,
+    "pricing": {
+      "openai": {
+        "in": 2.5,
+        "out": 10.0,
+        "search": 0.025
+      },
+      "anthropic": {
+        "in": 3.0,
+        "out": 15.0,
+        "search": 0.02
+      },
+      "perplexity": {
+        "in": 1.0,
+        "out": 1.0,
+        "search": 0.005
+      },
+      "gemini": {
+        "in": 0.3,
+        "out": 2.5,
+        "search": 0.0
+      }
+    },
+    "note": "Estimate, not a bill. Output tokens are real (from answer length); input tokens and web-search surcharges are assumptions. Gemini grounding treated as free."
+  },
+  "runs": [
+    {
+      "run": "2026-11-01",
+      "cost": 14.06,
+      "calls": 672,
+      "by_provider": {
+        "anthropic": {
+          "cost": 6.3,
+          "calls": 170
+        },
+        "gemini": {
+          "cost": 0.47,
+          "calls": 170
+        },
+        "openai": {
+          "cost": 5.94,
+          "calls": 170
+        },
+        "perplexity": {
+          "cost": 1.34,
+          "calls": 162
+        }
+      }
+    },
+    {
+      "run": "2026-10-01",
+      "cost": 12.19,
+      "calls": 498,
+      "by_provider": {
+        "anthropic": {
+          "cost": 5.68,
+          "calls": 152
+        },
+        "gemini": {
+          "cost": 0.46,
+          "calls": 173
+        },
+        "openai": {
+          "cost": 6.05,
+          "calls": 173
+        }
+      }
+    },
+    {
+      "run": "2026-09-01",
+      "cost": 9.64,
+      "calls": 428,
+      "by_provider": {
+        "anthropic": {
+          "cost": 3.24,
+          "calls": 88
+        },
+        "gemini": {
+          "cost": 0.46,
+          "calls": 170
+        },
+        "openai": {
+          "cost": 5.94,
+          "calls": 170
+        }
+      }
+    },
+    {
+      "run": "2026-08-21",
+      "cost": 12.8,
+      "calls": 515,
+      "by_provider": {
+        "anthropic": {
+          "cost": 6.29,
+          "calls": 169
+        },
+        "gemini": {
+          "cost": 0.46,
+          "calls": 173
+        },
+        "openai": {
+          "cost": 6.05,
+          "calls": 173
+        }
+      }
+    },
+    {
+      "run": "2026-08-11",
+      "cost": 12.68,
+      "calls": 510,
+      "by_provider": {
+        "anthropic": {
+          "cost": 6.32,
+          "calls": 170
+        },
+        "gemini": {
+          "cost": 0.42,
+          "calls": 170
+        },
+        "openai": {
+          "cost": 5.94,
+          "calls": 170
+        }
+      }
+    },
+    {
+      "run": "2026-08-01",
+      "cost": 14.38,
+      "calls": 692,
+      "by_provider": {
+        "anthropic": {
+          "cost": 6.45,
+          "calls": 173
+        },
+        "gemini": {
+          "cost": 0.45,
+          "calls": 173
+        },
+        "openai": {
+          "cost": 6.04,
+          "calls": 173
+        },
+        "perplexity": {
+          "cost": 1.44,
+          "calls": 173
+        }
+      }
+    },
+    {
+      "run": "2026-07-28",
+      "cost": 14.12,
+      "calls": 688,
+      "by_provider": {
+        "anthropic": {
+          "cost": 6.1,
+          "calls": 163
+        },
+        "gemini": {
+          "cost": 0.45,
+          "calls": 175
+        },
+        "openai": {
+          "cost": 6.12,
+          "calls": 175
+        },
+        "perplexity": {
+          "cost": 1.46,
+          "calls": 175
+        }
+      }
+    },
+    {
+      "run": "2026-07-27",
+      "cost": 14.56,
+      "calls": 700,
+      "by_provider": {
+        "anthropic": {
+          "cost": 6.52,
+          "calls": 175
+        },
+        "gemini": {
+          "cost": 0.46,
+          "calls": 175
+        },
+        "openai": {
+          "cost": 6.12,
+          "calls": 175
+        },
+        "perplexity": {
+          "cost": 1.46,
+          "calls": 175
+        }
+      }
+    },
+    {
+      "run": "2026-07-20",
+      "cost": 0.23,
+      "calls": 43,
+      "by_provider": {
+        "gemini": {
+          "cost": 0.06,
+          "calls": 22
+        },
+        "perplexity": {
+          "cost": 0.18,
+          "calls": 21
+        }
+      }
+    },
+    {
+      "run": "2026-07-14",
+      "cost": 0.25,
+      "calls": 44,
+      "by_provider": {
+        "gemini": {
+          "cost": 0.07,
+          "calls": 22
+        },
+        "perplexity": {
+          "cost": 0.19,
+          "calls": 22
+        }
+      }
+    },
+    {
+      "run": "2026-07-11",
+      "cost": 14.68,
+      "calls": 700,
+      "by_provider": {
+        "anthropic": {
+          "cost": 6.57,
+          "calls": 175
+        },
+        "gemini": {
+          "cost": 0.49,
+          "calls": 175
+        },
+        "openai": {
+          "cost": 6.12,
+          "calls": 175
+        },
+        "perplexity": {
+          "cost": 1.5,
+          "calls": 175
+        }
+      }
+    },
+    {
+      "run": "2026-07-05",
+      "cost": 6.59,
+      "calls": 356,
+      "by_provider": {
+        "anthropic": {
+          "cost": 4.97,
+          "calls": 134
+        },
+        "gemini": {
+          "cost": 0.12,
+          "calls": 47
+        },
+        "perplexity": {
+          "cost": 1.49,
+          "calls": 175
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "_about": "How we talk. Each voice is a reusable tone the generators can write IN. Grounded where possible in real sources (the pinned AEO sources in saved.json, the founder's own writing). The content generator and Reddit drafter pick a voice. `grounded_in` points at the language to echo. Edit freely.",
+  "voices": [
+    {
+      "id": "clarence",
+      "name": "Clarence product voice",
+      "default_for": ["answers-pages", "site-copy"],
+      "description": "Warm, plain, honest, first person. Helps first, sells never. The voice of someone who gets the quiet dread of drifting and doesn't judge you for it.",
+      "do": [
+        "answer the real question directly in the first sentence",
+        "use plain human words, short sentences",
+        "name the feeling honestly (guilt, the blank box, the too-long gap)",
+        "give one concrete example message when it helps",
+        "mention Clarence at most once, near the end, only if it truly fits"
+      ],
+      "dont": [
+        "no em dash, ever (comma, period, colon, parentheses instead)",
+        "no statistics or invented numbers",
+        "no hard pitch, no marketing gloss, no 'unlock' / 'supercharge'",
+        "never talk down to the reader"
+      ],
+      "grounded_in": ["site/src/content/guides (hand-written)", "the manifesto"]
+    },
+    {
+      "id": "drift",
+      "name": "Drift / manifesto voice",
+      "default_for": ["emotional-copy", "reconnection-pages"],
+      "description": "Tender and recognizing. Names the specific ache of a friendship that faded with no villain and no event. Makes the reader feel seen before offering anything.",
+      "do": [
+        "start from the feeling, not the fix",
+        "normalize it: no falling out, nothing terrible, people just drift",
+        "reassure that reaching out is allowed and rarely unwelcome",
+        "keep it gentle, close, unhurried"
+      ],
+      "dont": [
+        "no em dash",
+        "don't rush to a solution or a product",
+        "don't be sentimental to the point of fake, stay true"
+      ],
+      "grounded_in": [
+        "PINNED: facebook.com/sisteriamwithyou drift-in-friendship post",
+        "the Clarence manifesto (catch drift before it becomes distance)"
+      ]
+    },
+    {
+      "id": "founder",
+      "name": "Founder / build-in-public",
+      "default_for": ["blog"],
+      "description": "Candid first-person from the person building Clarence. Decisions, reversals, what surprised me. Essayistic, specific, a little vulnerable. Not a brand, a person.",
+      "do": [
+        "first person singular, real opinions",
+        "show the reasoning and the changes of mind",
+        "concrete details over abstractions"
+      ],
+      "dont": [
+        "no em dash",
+        "no press-release voice, no 'we're excited to announce'",
+        "don't pretend it's finished when it isn't"
+      ],
+      "grounded_in": ["site/src/content/blog (founder-voiced)"]
+    },
+    {
+      "id": "reddit-peer",
+      "name": "Peer on Reddit",
+      "default_for": ["reddit-replies"],
+      "description": "A real person answering in a thread, sharing experience, not promoting. Helpful first, human, occasionally funny. Earns the right to mention anything by being useful first.",
+      "do": [
+        "answer the actual question like a person who's been there",
+        "share a specific tactic or example, not a pitch",
+        "match the thread's register and energy",
+        "mention Clarence only if it genuinely answers the ask, and disclose plainly"
+      ],
+      "dont": [
+        "no em dash",
+        "never drop a link that doesn't earn its place",
+        "no copy-paste marketing tone, that's how accounts get flagged"
+      ],
+      "grounded_in": ["scratch/reddit/icp_corpus.jsonl verbatim quotes"]
+    }
+  ]
+}

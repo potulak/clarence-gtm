@@ -1,0 +1,44 @@
+# Clarence Reddit cockpit, cloud half. Deploy from this directory:
+#
+#   npx wrangler secret put COCKPIT_KEY     # same key the Mac board uses
+#   npx wrangler deploy
+#
+# The phone view is staged into public/ by sync-cloud.py, so the deployed UI is
+# the one the Mac is running rather than a fork that drifts.
+name = "clarence-reddit"
+main = "src/worker.js"
+compatibility_date = "2026-07-01"
+
+# One public surface only. Per-version preview URLs would be extra reachable
+# hostnames serving the same board. These MUST sit above the first table header:
+# TOML assigns any key after a header to that table, and putting them at the
+# bottom silently made them fields of d1_databases[0], which wrangler ignored.
+workers_dev = true
+preview_urls = false
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+# The Worker runs BEFORE static assets. Without this the edge would serve m.html
+# straight from the asset store and the key check would never run.
+run_worker_first = true
+# Serve files literally. The default "auto" rewrites /m.html to /m, which the
+# route below maps straight back to /m.html: a redirect loop, not a page.
+html_handling = "none"
+not_found_handling = "none"
+
+# Worker to Worker over the public URL is refused by Cloudflare (error 1042).
+# A service binding is the supported path, and it is better anyway: the call
+# never leaves Cloudflare's network, so the proxy needs no public exposure for
+# this and the hop adds no latency.
+[[services]]
+binding = "PROXY"
+service = "clarence-proxy"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "clarence-reddit"
+database_id = "<your-d1-database-id>"
+
+# No routes block on purpose: this stays on its workers.dev subdomain, unlisted
+# and noindexed, rather than taking a name on the product domain.

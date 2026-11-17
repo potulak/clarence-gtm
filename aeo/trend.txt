@@ -1,0 +1,27 @@
+
+AEO TREND  ·  12 runs  ·  2026-07-05 → 2026-11-01
+==============================================================================
+run         providers  answers mentions  Qs hit  coverage  cites
+------------------------------------------------------------------------------
+2026-07-05  3              356        3       3      1.7%      0
+2026-07-11  4              700       12       3      1.7%      1  (+9 vs prev)
+2026-07-14  2               44        4       2      9.1%      1  (-8 vs prev)
+2026-07-20  2               43        4       2      9.1%      3  (+0 vs prev)
+2026-07-27  4              700       12       3      1.7%      6  (+8 vs prev)
+2026-07-28  4              688       12       3      1.7%      7  (+0 vs prev)
+2026-08-01  4              692       11       3      1.7%      4  (-1 vs prev)
+2026-08-11  4              510        0       0      0.0%      0  (-11 vs prev)
+2026-08-21  4              515        9       3      1.7%      1  (+9 vs prev)
+2026-09-01  4              428        0       0      0.0%      0  (-9 vs prev)
+2026-10-01  4              498        9       3      1.7%      1  (+9 vs prev)
+2026-11-01  4              672        0       0      0.0%      0  (-9 vs prev)
+------------------------------------------------------------------------------
+note: runs differ in scope (full query set vs weekly watchlist),
+so read mentions/coverage %, not raw answer counts, across runs.
+
+QUESTIONS WE HAVE EVER BEEN NAMED ON (first seen)
+------------------------------------------------------------------------------
+  2026-07-05   Clarence app review is it legit
+  2026-07-05   Clarence mac app privacy
+  2026-07-05   does Clarence read my messages
+

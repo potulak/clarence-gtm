@@ -1,0 +1,61 @@
+name: reddit-watchdog
+
+# Asks the cloud board how long since anything was collected, and FAILS when the
+# answer is too long. A failed Actions run mails the founder by default, and that
+# is the entire point of this workflow: it turns silence into a message.
+#
+# Why it exists. Collection died on 2026-09-02 and was discovered on 2026-10-17.
+# The 45 days were not lost because collection broke, they were lost because
+# nothing said so: a dead collector and a quiet queue look identical from the
+# board, the same cards in the same order, just not moving.
+#
+# Why here, when the collector itself cannot run here. This needs NO Reddit
+# access, so the 403-from-a-datacenter wall that makes reddit-collect.yml
+# dormant does not apply. And Actions is the one part of this setup that has
+# proven it runs with every Mac of his shut, which is precisely the condition
+# the alarm has to survive.
+#
+# Secret: COCKPIT_KEY, the same key the phone board uses. There is no keyless
+# way to ask: the Worker gates every endpoint except the install manifest and
+# icons. Until the secret exists this workflow does NOT fail, it reports "not
+# armed" as a warning on the Actions page, because mailing him every 3 hours
+# about a setup step is the same noise this was built to remove.
+
+on:
+  schedule:
+    # Every 3 hours against a 4 hour threshold, tightened 2026-10-18. The two
+    # numbers multiply rather than compete: the worst case he can wait is the
+    # threshold plus one cron gap, so this is about 7 hours, where 12 and 6 was
+    # 18. That matters because the outage it has to catch is the Air napping,
+    # which starts the moment somebody unplugs it.
+    # Cost: 8 runs a day, about 240 Actions minutes a month at the one minute
+    # per run GitHub bills, inside the free allowance with the weekly jobs.
+    - cron: '0 */3 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: reddit-watchdog
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Has anything collected lately?
+        env:
+          COCKPIT_KEY: ${{ secrets.COCKPIT_KEY }}
+          # The threshold lives here, beside the cron that decides how quickly a
+          # breach is noticed, so the two are changed together. Raise it if the
+          # Air ever goes back to sleeping at night: see the note in watchdog.py.
+          CLARENCE_STALE_AFTER_HOURS: '4'
+        run: python3 reddit/collector/watchdog.py
